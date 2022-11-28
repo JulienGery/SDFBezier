@@ -133,6 +133,3 @@ class Quintic(Polynom):
         fq = Quartic(a, k, l, m, n)
         # print(f'({fq})(x-{r})')
         return np.array([r, *fq.roots()])
-
-q = Quintic(-1, -2, -3, -2, -1, 2)
-print(q)
