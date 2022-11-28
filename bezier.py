@@ -15,7 +15,7 @@ class Bezier:
     def derivate(self, t):
         n = len(self.ancors) -1
         return sum(
-            (-(1-t)**(n-k-1) * t**k + (1-t)**(n-k) * k * t**(k-1)) * choose(n, k) * p for k, p in enumerate(self.ancors)
+            (-(n-k)*(1-t)**(n-k-1) * t**k + (1-t)**(n-k) * k * t**(k-1)) * choose(n, k) * p for k, p in enumerate(self.ancors)
         )
     
     def findClosestPoint(self, P: np.array):
