@@ -27,8 +27,9 @@ class Polynom:
         size = len(self.coef)
         rep = ''
         for i, j in enumerate(self.coef):
-            rep += f'{j}x^{size-i-1}+'
-        return rep[:-4]
+            rep += '+' if j >= 0 else ''
+            rep += f'{j}x^{size-i-1}'
+        return rep[:-3]
 
     def __call__(self, x: float) -> float:
         size = len(self.coef)
@@ -133,3 +134,5 @@ class Quintic(Polynom):
         # print(f'({fq})(x-{r})')
         return np.array([r, *fq.roots()])
 
+q = Quintic(-1, -2, -3, -2, -1, 2)
+print(q)
