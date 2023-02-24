@@ -1,4 +1,4 @@
-project "WalnutApp"
+project "SDFBezier"
    kind "ConsoleApp"
    language "C++"
    cppdialect "C++17"
@@ -9,19 +9,19 @@ project "WalnutApp"
 
    includedirs
    {
-      "../vendor/imgui",
-      "../vendor/glfw/include",
+      "../Walnut/vendor/imgui",
+      "../Walnut/vendor/glfw/include",
+      "../Walnut/vendor/glm",
 
-      "../Walnut/src",
+      "../Walnut/Walnut/src",
 
       "%{IncludeDir.VulkanSDK}",
-      "%{IncludeDir.glm}",
    }
 
-    links
-    {
-        "Walnut"
-    }
+   links
+   {
+       "Walnut"
+   }
 
    targetdir ("../bin/" .. outputdir .. "/%{prj.name}")
    objdir ("../bin-int/" .. outputdir .. "/%{prj.name}")
