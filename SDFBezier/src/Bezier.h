@@ -12,7 +12,7 @@ struct Custom // tmp struc will be removed
 inline float distanceSq(const glm::vec2& a, const glm::vec2& b);
 
 
-//need to find a way to have only one class for all of berzier
+//need to find a way to have only one class for all of bezier
 
 class Bezier3
 {
