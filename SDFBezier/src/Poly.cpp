@@ -1,6 +1,7 @@
 #include "Poly.h"
 
-#include <iostream>
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 Poly::Poly(const std::vector<double>& coefs) : m_Coefs{ coefs }
 {}
@@ -78,7 +79,6 @@ Quintic::Quintic(const std::vector<double>& coef) : Poly{ coef }
 
 std::vector<std::complex<double>> Quintic::roots(double& start)
 {
-
 	double a = m_Coefs[5];
 	double b = m_Coefs[4];
 	double c = m_Coefs[3];
@@ -136,19 +136,19 @@ std::vector<std::complex<double>> Quintic::roots(double& start)
 
 	double k, l, m, n;
 
-	if (start != 0.)
-	{
-		k = b + start;
-		l = c + start * k;
-		m = d + start * l;
-		n = -g / start;
-	}
-	else
+	if (start == 0)
 	{
 		k = b;
 		l = c;
 		m = d;
 		n = e;
+	}
+	else
+	{
+		k = b + start;
+		l = c + start * k;
+		m = d + start * l;
+		n = -g / start;
 	}
 
 	Quartic quartic{ {n, m, l, k, a} };
@@ -234,19 +234,19 @@ std::vector<std::complex<double>> Quartic::roots()
 	if (std::abs(R) < 1e-08)
 	{
 		R = 0;
-		const std::complex<double> putain = 3.0 / 4.0 * b * b - 2.0 * c;
-		const std::complex<double> jsp = 2.0 * std::sqrt(std::complex<double>(y * y - 4.0 * e));
+		const std::complex<double> const1 = 3.0 / 4.0 * b * b - 2.0 * c;
+		const std::complex<double> const2 = 2.0 * std::sqrt(std::complex<double>(y * y - 4.0 * e));
 
-		D = std::sqrt(putain + jsp);
-		E = std::sqrt(putain - jsp);
+		D = std::sqrt(const1 + const2);
+		E = std::sqrt(const1 - const2);
 	}
 	else
 	{
-		const std::complex<double> putain = 3.0 / 4.0 * b * b - R * R - 2.0 * c;
-		const std::complex<double> jsp = (4.0 * b * c - 8.0 * d - b * b * b) / (4.0 * R);
+		const std::complex<double> const1 = 3.0 / 4.0 * b * b - R * R - 2.0 * c;
+		const std::complex<double> const2 = (4.0 * b * c - 8.0 * d - b * b * b) / (4.0 * R);
 
-		D = std::sqrt(putain + jsp);
-		E = std::sqrt(putain - jsp);
+		D = std::sqrt(const1 + const2);
+		E = std::sqrt(const1 - const2);
 	}
 
 
@@ -262,16 +262,6 @@ std::vector<std::complex<double>> Quartic::roots()
 		min4d - R2 - E2
 	};
 
-	// Correction halley just in case
-
-	/*for (auto& i : result)
-	{
-		std::complex<double> f, fp, fpp;
-		f = this->operator()(i);
-		fp = this->derivate(i);
-		fpp = this->derivateSecond(i);
-		i -= 2.0 * f * fp / (2.0 * fp * fp - f * fpp);
-	}*/
 	return result;
 }
 
@@ -281,8 +271,6 @@ Cubic::Cubic(const std::vector<double>& coef) : Poly{ coef }
 
 std::vector<std::complex<double>> Cubic::roots()
 {
-	std::vector<std::complex<double>> result(3);
-
 	double a = m_Coefs[3];
 	double b = m_Coefs[2];
 	double c = m_Coefs[1];
@@ -305,6 +293,8 @@ std::vector<std::complex<double>> Cubic::roots()
 
 	const double length = std::pow(std::abs(w3), 1.0/3.0);
 	const double o = std::arg(w3);
+	
+	std::vector<std::complex<double>> result(3);
 
 	for (size_t i = 0; i < 3; i++)
 	{

@@ -9,3 +9,7 @@ void drawCurve(Bezier2& curve, const uint32_t& width, const uint32_t& height, ui
 void drawCurve(Bezier1& curve, const uint32_t& width, const uint32_t& height, uint32_t* array);
 
 void drawDerivate(Bezier3& curve, const uint32_t& width, const uint32_t& height, uint32_t* array);
+
+void RenderCurve(Bezier3& curve, const uint32_t& width, const uint32_t& height, uint32_t* array);
+void RenderCurve(Bezier2& curve, const uint32_t& width, const uint32_t& height, uint32_t* array);
+void RenderCurve(Bezier1& curve, const uint32_t& width, const uint32_t& height, uint32_t* array);

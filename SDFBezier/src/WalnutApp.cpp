@@ -37,11 +37,8 @@ public:
 
 		{
 			const Walnut::ScopedTimer timer("render curve " + std::to_string(width) + '*' + std::to_string(height) + " pixels");
-			m_Curve.renderCurve(width, height, m_ImageData);
+			RenderCurve(m_Curve, width, height, m_ImageData);
 		}
-
-
-		// drawCurve(m_Curve, width, height, m_ImageData);
 
 		for (size_t i = 0; i < (height / 2 * width); i++)
 		{
@@ -87,6 +84,10 @@ public:
 		ImGui::InputFloat("p3x", &m_Curve.m_P_3.x, 0.01f, 1.f, "%.2f");
 		ImGui::InputFloat("p3y", &m_Curve.m_P_3.y, 0.01f, 1.f, "%.2f");
 
+		ImGui::InputFloat("px", &m_Point.x, 0.01f, 1.f, "%.2f");
+		ImGui::InputFloat("py", &m_Point.y, 0.01f, 1.f, "%.2f");
+
+
 		ImGui::InputInt("render curve", &m_RenderCurve, 0, 1);
 
 		ImGui::End();
@@ -99,11 +100,13 @@ private:
 	uint32_t* m_ImageData = nullptr;
 	int m_RenderCurve = 0;
 
+	glm::vec2 m_Point{ 0, 0 };
 
-	Bezier3 m_Curve = Bezier3({ 0.2419367621598, 0.2515240096421 },
-								{ 1 , 1.4 },
-								{ 0.f , 0.31f },
-								{ 0.4620326128071, 0.4155727126037 },
+
+	Bezier3 m_Curve = Bezier3({ 0.5, 0.5 },
+								{ 0. , 1. },
+								{ 1. , 1. },
+								{ 0.5, 0.5 },
 		100
 	);
 };

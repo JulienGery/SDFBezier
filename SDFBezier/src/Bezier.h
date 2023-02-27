@@ -11,7 +11,10 @@ struct Custom // tmp struc will be removed
 
 inline float distanceSq(const glm::vec2& a, const glm::vec2& b);
 
-class Bezier3 
+
+//need to find a way to have only one class for all of berzier
+
+class Bezier3
 {
 public:
 	glm::vec2 m_P_0, m_P_1, m_P_2, m_P_3;
@@ -22,10 +25,11 @@ public:
 	~Bezier3();
 
 	glm::vec2 operator() (const float& t);
-	Custom findClosestPoint(const glm::vec2& point, double& start);
 	glm::vec2 derivate(const float& t);
+	Custom findClosestPoint(const glm::vec2& point, double& start);
 
-	void renderCurve(const size_t& width, const size_t& height, uint32_t* array);
+private:
+	Custom getClosestPoint(const std::vector<std::complex<double>>& roots, const glm::vec2& point);
 };
 
 class Bezier2
@@ -38,6 +42,9 @@ public:
 	~Bezier2();
 
 	glm::vec2 operator() (const float& t);
+	glm::vec2 derivate(const float& t);
+	Custom findClosestPoint(const glm::vec2& point);
+
 };
 
 
@@ -51,4 +58,6 @@ public:
 	~Bezier1();
 
 	glm::vec2 operator() (const float& t);
+	glm::vec2 derivate(const float& t);
+	Custom findClosestPoint(const glm::vec2& point);
 };

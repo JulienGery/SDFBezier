@@ -4,8 +4,6 @@
 #include <complex>
 #include <string>
 
-#define _USE_MATH_DEFINES
-#include <math.h>
 #include "glm/geometric.hpp"
 
 class Poly {
