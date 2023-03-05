@@ -1,16 +1,15 @@
 #pragma once
 
+#include <variant>
+#include <vector>
+
 #include "glm/vec2.hpp"
-#include "Poly.h"
 
 struct Custom // tmp struc will be removed
 {
 	float distance;
 	glm::vec2 point;
 };
-
-inline float distanceSq(const glm::vec2& a, const glm::vec2& b);
-
 
 //need to find a way to have only one class for all of bezier
 
@@ -27,9 +26,6 @@ public:
 	glm::vec2 operator() (const float& t);
 	glm::vec2 derivate(const float& t);
 	Custom findClosestPoint(const glm::vec2& point, double& start);
-
-private:
-	Custom getClosestPoint(const std::vector<std::complex<double>>& roots, const glm::vec2& point);
 };
 
 class Bezier2
@@ -47,7 +43,6 @@ public:
 
 };
 
-
 class Bezier1
 {
 public:
@@ -60,4 +55,23 @@ public:
 	glm::vec2 operator() (const float& t);
 	glm::vec2 derivate(const float& t);
 	Custom findClosestPoint(const glm::vec2& point);
+};
+
+class Bezier
+{
+public:
+	Bezier(const glm::vec2& p_0, const glm::vec2& p_1, const size_t& m_Count) : m_Impl(Bezier1(p_0, p_1, m_Count)) {}
+	Bezier(const glm::vec2& p_0, const glm::vec2& p_1, const glm::vec2& p_2, const size_t& m_Count) : m_Impl(Bezier2(p_0, p_1, p_2, m_Count)) {}
+	Bezier(const glm::vec2& p_0, const glm::vec2& p_1, const glm::vec2& p_2, const glm::vec2& p_3, const size_t& m_Count) : m_Impl(Bezier3(p_0, p_1, p_2, p_3, m_Count)) {}
+
+	glm::vec2 operator() (const float& t);
+	glm::vec2 derivate(const float& t);
+	Custom findClosestPoint(const glm::vec2& point, double& start);
+
+	size_t getCount();
+
+	std::vector<glm::vec2*> tmp();
+
+private:
+	std::variant<Bezier1, Bezier2, Bezier3> m_Impl;
 };

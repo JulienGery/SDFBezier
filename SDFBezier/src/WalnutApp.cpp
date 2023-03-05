@@ -70,23 +70,29 @@ public:
 		ImGui::End();
 		ImGui::Begin("parameters");
 
-		ImGui::InputInt("count", (int *)&m_Curve.m_Count, 1, 1000);
 
-		ImGui::InputFloat("p0x", &m_Curve.m_P_0.x, 0.01f, 1.f, "%.2f");
-		ImGui::InputFloat("p0y", &m_Curve.m_P_0.y, 0.01f, 1.f, "%.2f");
+		std::vector<glm::vec2*> points = m_Curve.tmp();
 
-		ImGui::InputFloat("p1x", &m_Curve.m_P_1.x, 0.01f, 1.f, "%.2f");
-		ImGui::InputFloat("p1y", &m_Curve.m_P_1.y, 0.01f, 1.f, "%.2f");
+		ImGui::InputFloat("p0x", &points[0]->x, 0.01f, 1.f, "%.2f");
+		ImGui::InputFloat("p0y", &points[0]->y, 0.01f, 1.f, "%.2f");
 
-		ImGui::InputFloat("p2x", &m_Curve.m_P_2.x, 0.01f, 1.f, "%.2f");
-		ImGui::InputFloat("p2y", &m_Curve.m_P_2.y, 0.01f, 1.f, "%.2f");
+		ImGui::InputFloat("p1x", &points[1]->x, 0.01f, 1.f, "%.2f");
+		ImGui::InputFloat("p1y", &points[1]->y, 0.01f, 1.f, "%.2f");
 
-		ImGui::InputFloat("p3x", &m_Curve.m_P_3.x, 0.01f, 1.f, "%.2f");
-		ImGui::InputFloat("p3y", &m_Curve.m_P_3.y, 0.01f, 1.f, "%.2f");
+		if (points.size() >= 3)
+		{
+			ImGui::InputFloat("p2x", &points[2]->x, 0.01f, 1.f, "%.2f");
+			ImGui::InputFloat("p2y", &points[2]->y, 0.01f, 1.f, "%.2f");
+		}
 
-		ImGui::InputFloat("px", &m_Point.x, 0.01f, 1.f, "%.2f");
-		ImGui::InputFloat("py", &m_Point.y, 0.01f, 1.f, "%.2f");
+		if (points.size() == 4)
+		{
+			ImGui::InputFloat("p2x", &points[3]->x, 0.01f, 1.f, "%.2f");
+			ImGui::InputFloat("p2y", &points[3]->y, 0.01f, 1.f, "%.2f");
+		}
 
+		//ImGui::InputFloat("px", &m_Point.x, 0.01f, 1.f, "%.2f");
+		//ImGui::InputFloat("py", &m_Point.y, 0.01f, 1.f, "%.2f");
 
 		ImGui::InputInt("render curve", &m_RenderCurve, 0, 1);
 
@@ -103,7 +109,7 @@ private:
 	glm::vec2 m_Point{ 0, 0 };
 
 
-	Bezier3 m_Curve = Bezier3({ 0.5, 0.5 },
+	Bezier m_Curve = Bezier({ 0.5, 0.5 },
 								{ 0. , 1. },
 								{ 1. , 1. },
 								{ 0.5, 0.5 },
