@@ -29,7 +29,7 @@ void drawSq(const glm::vec2& location, const size_t& width, const size_t& height
 
 void drawCurve(Bezier& curve, const uint32_t& width, const uint32_t& height, uint32_t* array)
 {
-	const size_t count = curve.getCount();
+	const size_t count = curve.m_Count;
 	for (size_t i = 0; i < count + 1; i++)
 	{
 		glm::vec2 point = curve((float) i / count);
@@ -48,7 +48,7 @@ void drawCurve(Bezier& curve, const uint32_t& width, const uint32_t& height, uin
 
 void drawDerivate(Bezier& curve, const uint32_t& width, const uint32_t& height, uint32_t* array)
 {
-	const size_t count = curve.getCount();
+	const size_t count = curve.m_Count;
 	for (size_t i = 0; i < count + 1; i++)
 	{
 		glm::vec2 point = curve.derivate((float)i / count);
@@ -83,6 +83,7 @@ void RenderCurve(Bezier& curve, const uint32_t& width, const uint32_t& height, u
 				size_t index = yi * width + xi;
 
 				float distance = curve.findClosestPoint(point, start).distance;
+
 				if (distance < 1e-05f)
 					array[index] = 0xff0000ff;
 				xi++;

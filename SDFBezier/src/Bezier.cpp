@@ -8,8 +8,7 @@ inline float distanceSq(const glm::vec2& a, const glm::vec2& b)
 	return glm::dot(tmp, tmp);
 }
 
-template <class TBezier>
-Custom getClosestPoint(TBezier* curve, const std::vector < std::complex<double>>& roots, const glm::vec2& point)
+Custom Bezier::getClosestPoint(const std::vector<std::complex<double>>& roots, const glm::vec2& point)
 {
 	size_t size = 0;
 	std::vector<double> realRoots(roots.size());
@@ -20,12 +19,11 @@ Custom getClosestPoint(TBezier* curve, const std::vector < std::complex<double>>
 			size++;
 		}
 
-
-	glm::vec2 closestPoint = curve->operator()(realRoots[0]);
+	glm::vec2 closestPoint = operator()(realRoots[0]);
 	float distance = distanceSq(closestPoint, point);
 	for (size_t i = 1; i < size; i++)
 	{
-		glm::vec2 testPoint = curve->operator()(realRoots[i]);
+		glm::vec2 testPoint = operator()(realRoots[i]);
 		float testDistance = distanceSq(testPoint, point);
 		if (testDistance < distance)
 		{
@@ -37,17 +35,7 @@ Custom getClosestPoint(TBezier* curve, const std::vector < std::complex<double>>
 	return { distance, closestPoint };
 }
 
-Bezier3::Bezier3(const glm::vec2& p_0, const glm::vec2& p_1, const glm::vec2& p_2, const glm::vec2& p_3, const size_t& count)
-{
-	m_P_0 = p_0;
-	m_P_1 = p_1;
-	m_P_2 = p_2;
-	m_P_3 = p_3;
-
-	m_Count = count;
-}
-
-glm::vec2 Bezier3::operator() (const float& t)
+glm::vec2 Bezier::Bezier3(const float& t)
 {
 	return m_P_0 +
 		3.f * t * (m_P_1 - m_P_0) +
@@ -61,14 +49,14 @@ glm::vec2 Bezier3::operator() (const float& t)
 	// -pp_1
 }
 
-glm::vec2 Bezier3::derivate(const float& t)
+glm::vec2 Bezier::Bezier3Derivate(const float& t)
 {
 	return 3.f * (m_P_1 - m_P_0) 
 		+ 6.f * t * (m_P_2 - 2.f * m_P_1 + m_P_0) 
 		+ 3.f * t * t * (m_P_3 - 3.f * m_P_2 + 3.f * m_P_1 - m_P_0);
 }
 
-Custom Bezier3::findClosestPoint(const glm::vec2& point, double& start)
+Custom Bezier::Bezier3FindClosestPoint(const glm::vec2& point, double& start)
 {
 	const glm::vec2 p = point - m_P_0;
 	const glm::vec2 p1 = m_P_1 - m_P_0;
@@ -86,28 +74,17 @@ Custom Bezier3::findClosestPoint(const glm::vec2& point, double& start)
 
 	std::vector<std::complex<double>> roots = Quintic{ {f, e, d, c, b, a} }.roots(start);
 
-	return getClosestPoint(this, roots, point);
+	return getClosestPoint(roots, point);
 }
 
-Bezier3::~Bezier3() {}
-
-Bezier2::Bezier2(const glm::vec2& p_0, const glm::vec2& p_1, const glm::vec2& p_2, const size_t& count)
-{
-	m_P_0 = p_0;
-	m_P_1 = p_1;
-	m_P_2 = p_2;
-
-	m_Count = count;
-}
-
-glm::vec2 Bezier2::operator() (const float& t)
+glm::vec2 Bezier::Bezier2(const float& t)
 {
 	return m_P_0 + 
 		2.f * t * (m_P_1 - m_P_0) + 
 		t * t * (m_P_2 - 2.0f * m_P_1 + m_P_0);
 }
 
-glm::vec2 Bezier2::derivate(const float& t)
+glm::vec2 Bezier::Bezier2Derivate(const float& t)
 {
 	return 2.f * (m_P_1 - m_P_0) +
 		2.0f * t * (m_P_2 - 2.0f * m_P_1 + m_P_0);
@@ -118,7 +95,7 @@ glm::vec2 Bezier2::derivate(const float& t)
 
 }
 
-Custom Bezier2::findClosestPoint(const glm::vec2& point)
+Custom Bezier::Bezier2FindClosestPoint(const glm::vec2& point)
 {
 	const glm::vec2 p = point - m_P_0;
 	const glm::vec2 p1 = m_P_1 - m_P_0;
@@ -131,25 +108,15 @@ Custom Bezier2::findClosestPoint(const glm::vec2& point)
 
 	const std::vector<std::complex<double>> roots = Cubic{ {d, c, b, a} }.roots();
 
-	return getClosestPoint(this, roots, point);
+	return getClosestPoint(roots, point);
 }
 
-Bezier2::~Bezier2() {}
-
-Bezier1::Bezier1(const glm::vec2& p_0, const glm::vec2& p_1, const size_t& count)
-{
-	m_P_0 = p_0;
-	m_P_1 = p_1;
-
-	m_Count = count;
-}
-
-glm::vec2 Bezier1::operator() (const float& t)
+glm::vec2 Bezier::Bezier1(const float& t)
 {
 	return m_P_0 + t * (m_P_1 - m_P_0);
 }
 
-glm::vec2 Bezier1::derivate(const float& t)
+glm::vec2 Bezier::Bezier1Derivate(const float& t)
 {
 	return m_P_1 - m_P_0;
 
@@ -159,7 +126,7 @@ glm::vec2 Bezier1::derivate(const float& t)
 	// -pp1
 }
 
-Custom Bezier1::findClosestPoint(const glm::vec2& point)
+Custom Bezier::Bezier1FindClosestPoint(const glm::vec2& point)
 {
 	const glm::vec2 p = point - m_P_0;
 	const glm::vec2 p1 = m_P_1 - m_P_0;
@@ -173,54 +140,50 @@ Custom Bezier1::findClosestPoint(const glm::vec2& point)
 	return { distanceSq(closestPoint, point), closestPoint };
 }
 
-Bezier1::~Bezier1() {}
+
+Bezier::Bezier(const std::vector<glm::vec2>& points, const size_t& count)
+{
+	//assert(4 >= points.size() >= 2 && "error when creating Bezier curve");
+
+	m_Count = count;
+	m_PointCount = points.size();
+
+	m_P_0 = points[0];
+	m_P_1 = points[1];
+
+	if (m_PointCount >= 3)
+		m_P_2 = points[2];
+	if (m_PointCount == 4)
+		m_P_3 = points[3];
+}
+
+Bezier::~Bezier()
+{
+}
 
 glm::vec2 Bezier::operator()(const float& t)
 {
-	if (auto bezier = std::get_if<Bezier3>(&m_Impl))
-		return bezier->operator()(t);
-	if (auto bezier = std::get_if<Bezier2>(&m_Impl))
-		return bezier->operator()(t);
-	if (auto bezier = std::get_if<Bezier1>(&m_Impl))
-		return bezier->operator()(t);
+	if (m_PointCount == 4)
+		return Bezier3(t);
+	if (m_PointCount == 3)
+		return Bezier2(t);
+	return Bezier1(t);
 }
 
 glm::vec2 Bezier::derivate(const float& t)
 {
-	if (auto bezier = std::get_if<Bezier3>(&m_Impl))
-		return bezier->derivate(t);
-	if (auto bezier = std::get_if<Bezier2>(&m_Impl))
-		return bezier->derivate(t);
-	if (auto bezier = std::get_if<Bezier1>(&m_Impl))
-		return bezier->derivate(t);
+	if (m_PointCount == 4)
+		return Bezier3Derivate(t);
+	if (m_PointCount == 3)
+		return Bezier2Derivate(t);
+	return Bezier1Derivate(t);
 }
 
 Custom Bezier::findClosestPoint(const glm::vec2& point, double& start)
 {
-	if (auto bezier = std::get_if<Bezier3>(&m_Impl))
-		return bezier->findClosestPoint(point, start);
-	if (auto bezier = std::get_if<Bezier2>(&m_Impl))
-		return bezier->findClosestPoint(point);
-	if (auto bezier = std::get_if<Bezier1>(&m_Impl))
-		return bezier->findClosestPoint(point);
-}
-
-size_t Bezier::getCount()
-{
-	if (auto bezier = std::get_if<Bezier3>(&m_Impl))
-		return bezier->m_Count;
-	if (auto bezier = std::get_if<Bezier2>(&m_Impl))
-		return bezier->m_Count;
-	if (auto bezier = std::get_if<Bezier1>(&m_Impl))
-		return bezier->m_Count;
-}
-
-std::vector<glm::vec2*> Bezier::tmp()
-{
-	if (auto bezier = std::get_if<Bezier3>(&m_Impl))
-		return { &bezier->m_P_0, &bezier->m_P_1, &bezier->m_P_2, &bezier->m_P_3 };
-	if (auto bezier = std::get_if<Bezier2>(&m_Impl))
-		return { &bezier->m_P_0, &bezier->m_P_1, &bezier->m_P_2 };
-	if (auto bezier = std::get_if<Bezier1>(&m_Impl))
-		return { &bezier->m_P_0, &bezier->m_P_1};
+	if (m_PointCount == 4)
+		return Bezier3FindClosestPoint(point, start);
+	if (m_PointCount == 3)
+		return Bezier2FindClosestPoint(point);
+	return Bezier1FindClosestPoint(point);
 }

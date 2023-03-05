@@ -2,6 +2,7 @@
 
 #include <variant>
 #include <vector>
+#include <complex>
 
 #include "glm/vec2.hpp"
 
@@ -11,67 +12,41 @@ struct Custom // tmp struc will be removed
 	glm::vec2 point;
 };
 
-//need to find a way to have only one class for all of bezier
-
-class Bezier3
-{
-public:
-	glm::vec2 m_P_0, m_P_1, m_P_2, m_P_3;
-
-	size_t m_Count = 100;
-
-	Bezier3(const glm::vec2& p_0, const glm::vec2& p_1, const glm::vec2& p_2, const glm::vec2& p_3, const size_t& m_Count);
-	~Bezier3();
-
-	glm::vec2 operator() (const float& t);
-	glm::vec2 derivate(const float& t);
-	Custom findClosestPoint(const glm::vec2& point, double& start);
-};
-
-class Bezier2
-{
-public:
-	glm::vec2 m_P_0, m_P_1, m_P_2;
-	size_t m_Count = 100;
-
-	Bezier2(const glm::vec2& p_0, const glm::vec2& p_1, const glm::vec2& p_2, const size_t& m_Count);
-	~Bezier2();
-
-	glm::vec2 operator() (const float& t);
-	glm::vec2 derivate(const float& t);
-	Custom findClosestPoint(const glm::vec2& point);
-
-};
-
-class Bezier1
-{
-public:
-	glm::vec2 m_P_0, m_P_1;
-	size_t m_Count = 100;
-
-	Bezier1(const glm::vec2& p_0, const glm::vec2& p_1, const size_t& m_Count);
-	~Bezier1();
-
-	glm::vec2 operator() (const float& t);
-	glm::vec2 derivate(const float& t);
-	Custom findClosestPoint(const glm::vec2& point);
-};
-
 class Bezier
 {
 public:
-	Bezier(const glm::vec2& p_0, const glm::vec2& p_1, const size_t& m_Count) : m_Impl(Bezier1(p_0, p_1, m_Count)) {}
-	Bezier(const glm::vec2& p_0, const glm::vec2& p_1, const glm::vec2& p_2, const size_t& m_Count) : m_Impl(Bezier2(p_0, p_1, p_2, m_Count)) {}
-	Bezier(const glm::vec2& p_0, const glm::vec2& p_1, const glm::vec2& p_2, const glm::vec2& p_3, const size_t& m_Count) : m_Impl(Bezier3(p_0, p_1, p_2, p_3, m_Count)) {}
+	size_t m_Count;
+	glm::vec2 m_P_0 = { 0., 0. }, 
+		m_P_1 = { 0., 0. },
+		m_P_2 = { 0., 0. }, 
+		m_P_3 = { 0., 0. };
+
+	Bezier(const std::vector<glm::vec2>& points, const size_t& count);
+	~Bezier();
 
 	glm::vec2 operator() (const float& t);
 	glm::vec2 derivate(const float& t);
 	Custom findClosestPoint(const glm::vec2& point, double& start);
 
-	size_t getCount();
-
-	std::vector<glm::vec2*> tmp();
+	size_t getPointCount() const { return m_PointCount; }
 
 private:
-	std::variant<Bezier1, Bezier2, Bezier3> m_Impl;
+	size_t m_PointCount;
+
+	//Bezier3
+	glm::vec2 Bezier3(const float& t);
+	glm::vec2 Bezier3Derivate(const float& t);
+	Custom Bezier3FindClosestPoint(const glm::vec2& point, double& start);
+
+	//Bezier2
+	glm::vec2 Bezier2(const float& t);
+	glm::vec2 Bezier2Derivate(const float& t);
+	Custom Bezier2FindClosestPoint(const glm::vec2& point);
+
+	//Bezier1
+	glm::vec2 Bezier1(const float& t);
+	glm::vec2 Bezier1Derivate(const float& t);
+	Custom Bezier1FindClosestPoint(const glm::vec2& point);
+
+	Custom getClosestPoint(const std::vector<std::complex<double>>& roots, const glm::vec2& point);
 };
