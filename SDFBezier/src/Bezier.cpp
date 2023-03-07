@@ -2,6 +2,8 @@
 #include "Poly.h"
 #include "glm/geometric.hpp"
 
+#include <iostream>
+
 inline float distanceSq(const glm::vec2& a, const glm::vec2& b)
 {
 	const glm::vec2 tmp = a - b;
@@ -77,6 +79,37 @@ Custom Bezier::Bezier3FindClosestPoint(const glm::vec2& point, double& start)
 	return getClosestPoint(roots, point);
 }
 
+void Bezier::Bezier3Extremum()
+{
+	const glm::vec2 p1 = m_P_1 - m_P_0;
+	const glm::vec2 p2 = m_P_2 - 2.f * m_P_1 + m_P_0;
+	const glm::vec2 p3 = m_P_3 - 3.f * m_P_2 + 3.f * m_P_1 - m_P_0;
+
+	for (const auto& i : Quadratic({ p1.x, 2.0 * p2.x, p3.x }).roots())
+	{
+		const double tmp = glm::clamp(i, 0., 1.);
+		if (tmp != 0.0 && tmp != 1.0)
+			m_Extremum.push_back(i);
+	}
+
+	for (const auto& i : Quadratic({ p1.y, 2.0 * p2.y, p3.y }).roots())
+	{
+		const double tmp = glm::clamp(i, 0., 1.);
+		if (tmp != 0 && tmp != 1)
+			m_Extremum.push_back(i);
+	}
+		
+
+	for (size_t i = 0; i < m_Extremum.size() - 1; i++)
+	{
+		size_t min = i;
+		for (size_t j = i + 1; j < m_Extremum.size(); j++)
+			if (m_Extremum[min] > m_Extremum[j])
+				min = j;
+		std::swap(m_Extremum[i], m_Extremum[min]);
+	}
+}
+
 glm::vec2 Bezier::Bezier2(const float& t)
 {
 	return m_P_0 + 
@@ -111,6 +144,21 @@ Custom Bezier::Bezier2FindClosestPoint(const glm::vec2& point)
 	return getClosestPoint(roots, point);
 }
 
+void Bezier::Bezier2Extremum()
+{
+	//p1 +
+		//tp2;
+	const glm::vec2 p1 = m_P_1 - m_P_0;
+	const glm::vec2 p2 = m_P_2 - 2.0f * m_P_1 + m_P_0;
+
+	float r1 = -(p1.x / p2.x);
+	float r2 = -(p1.y / p2.y);
+	if (r1 > r2)
+		std::swap(r1, r2);
+
+	m_Extremum = {0, r1, r2, 1};
+}
+
 glm::vec2 Bezier::Bezier1(const float& t)
 {
 	return m_P_0 + t * (m_P_1 - m_P_0);
@@ -140,21 +188,32 @@ Custom Bezier::Bezier1FindClosestPoint(const glm::vec2& point)
 	return { distanceSq(closestPoint, point), closestPoint };
 }
 
-
 Bezier::Bezier(const std::vector<glm::vec2>& points, const size_t& count)
 {
-	//assert(4 >= points.size() >= 2 && "error when creating Bezier curve");
-
 	m_Count = count;
 	m_PointCount = points.size();
 
-	m_P_0 = points[0];
-	m_P_1 = points[1];
-
-	if (m_PointCount >= 3)
+	if (m_PointCount)
+		m_P_0 = points[0];
+	if (m_PointCount > 1)
+		m_P_1 = points[1];
+	if (m_PointCount > 2)
 		m_P_2 = points[2];
 	if (m_PointCount == 4)
 		m_P_3 = points[3];
+}
+
+Bezier::Bezier(const glm::vec2& point, const size_t& count)
+{
+	m_P_0 = point;
+	m_Count = count;
+	m_PointCount = 1;
+}
+
+Bezier::Bezier(const size_t& count)
+{
+	m_PointCount = 0;
+	m_Count = count;
 }
 
 Bezier::~Bezier()
@@ -186,4 +245,56 @@ Custom Bezier::findClosestPoint(const glm::vec2& point, double& start)
 	if (m_PointCount == 3)
 		return Bezier2FindClosestPoint(point);
 	return Bezier1FindClosestPoint(point);
+}
+
+void Bezier::addPoint(const glm::vec2& point)
+{
+	if (m_PointCount == 4)
+		throw std::runtime_error("failed to add point to bezier");
+
+	m_PointCount++;
+	if (m_PointCount == 1)
+		m_P_0 = point;
+	else if (m_PointCount == 2)
+		m_P_1 = point;
+	else if (m_PointCount == 3)
+		m_P_2 = point;
+	else if (m_PointCount == 4)
+		m_P_3 = point;
+}
+
+void Bezier::updateExtremum()
+{
+	m_Extremum.clear();
+	m_Extremum = { 0, 1 };
+	if (m_PointCount == 4)
+		Bezier3Extremum();
+	else if (m_PointCount == 3)
+		Bezier2Extremum();
+
+	m_ExtremumPoints.resize(m_Extremum.size());
+	for (size_t i = 0; i < m_ExtremumPoints.size(); i++)
+		m_ExtremumPoints[i] = operator()(m_Extremum[i]);
+
+	computeBoundingBox();
+}
+
+
+void Bezier::computeBoundingBox()
+{
+
+	m_TopRight = m_ExtremumPoints[0];
+	m_BottomLeft = m_ExtremumPoints[0];
+	
+	for (const auto& i : m_ExtremumPoints)
+	{
+		if (i.x > m_TopRight.x)
+			m_TopRight.x = i.x;
+		if (i.y > m_TopRight.y)
+			m_TopRight.y = i.y;
+		if (i.x < m_BottomLeft.x)
+			m_BottomLeft.x = i.x;
+		if (i.y < m_BottomLeft.y)
+			m_BottomLeft.y = i.y;
+	}
 }

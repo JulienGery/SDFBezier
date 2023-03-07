@@ -3,6 +3,8 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include <iostream>
+
 Poly::Poly(const std::vector<double>& coefs) : m_Coefs{ coefs }
 {}
 
@@ -155,7 +157,7 @@ std::vector<std::complex<double>> Quintic::roots(double& start)
 	
 	std::vector<std::complex<double>> result = quartic.roots();
 	result.push_back(start);
-
+	
 	return result;
 }
 
@@ -303,4 +305,34 @@ std::vector<std::complex<double>> Cubic::roots()
 		result[i] = x - b / 3.0;
 	}
 	return result;
+}
+
+Quadratic::Quadratic(const std::vector<double>& coef) : Poly{coef} 
+{}
+
+std::vector<double> Quadratic::roots()
+{
+	const double a = m_Coefs[2];
+	const double b = m_Coefs[1];
+	const double c = m_Coefs[0];
+
+	if (a == 0.)
+	{
+		if (b == 0.)
+			return { 0. };
+		return { -c / b };
+	}
+
+	const double delta = b * b - 4.0 * a * c;
+
+	if (delta > 0)
+		return {
+		(-b - std::sqrt(delta)) / (2.0 * a),
+		(-b + std::sqrt(delta)) / (2.0 * a)
+		};
+
+	if (delta == 0)
+		return { -b / (2.0 * a) };
+
+	return {};
 }

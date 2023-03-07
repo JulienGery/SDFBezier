@@ -22,26 +22,40 @@ public:
 		m_P_3 = { 0., 0. };
 
 	Bezier(const std::vector<glm::vec2>& points, const size_t& count);
+	Bezier(const glm::vec2& point, const size_t& count);
+	Bezier(const size_t& count);
 	~Bezier();
 
 	glm::vec2 operator() (const float& t);
 	glm::vec2 derivate(const float& t);
 	Custom findClosestPoint(const glm::vec2& point, double& start);
+	
+	void addPoint(const glm::vec2& point);
+	void updateExtremum();
 
+	std::vector<float> getExtremum() const { return m_Extremum; }
+	std::vector<glm::vec2> getExtrmumPoints() const { return m_ExtremumPoints; }
+	glm::vec2 getTopRight() const { return m_TopRight; }
+	glm::vec2 getBottomLeft() const { return m_BottomLeft; }
 	size_t getPointCount() const { return m_PointCount; }
 
 private:
+	glm::vec2 m_TopRight = {}, m_BottomLeft = {};
+	std::vector<float> m_Extremum;
+	std::vector<glm::vec2> m_ExtremumPoints;
 	size_t m_PointCount;
 
 	//Bezier3
 	glm::vec2 Bezier3(const float& t);
 	glm::vec2 Bezier3Derivate(const float& t);
 	Custom Bezier3FindClosestPoint(const glm::vec2& point, double& start);
+	void Bezier3Extremum();
 
 	//Bezier2
 	glm::vec2 Bezier2(const float& t);
 	glm::vec2 Bezier2Derivate(const float& t);
 	Custom Bezier2FindClosestPoint(const glm::vec2& point);
+	void Bezier2Extremum();
 
 	//Bezier1
 	glm::vec2 Bezier1(const float& t);
@@ -49,4 +63,6 @@ private:
 	Custom Bezier1FindClosestPoint(const glm::vec2& point);
 
 	Custom getClosestPoint(const std::vector<std::complex<double>>& roots, const glm::vec2& point);
+
+	void computeBoundingBox();
 };

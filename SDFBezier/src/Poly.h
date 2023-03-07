@@ -18,6 +18,7 @@ public:
 };
 
 // dirty way to find roots of quintic.
+// DOTO Rework Poly
 class Quintic : public Poly
 {
 public:
@@ -47,4 +48,11 @@ class Cubic : public Poly
 public:
 	Cubic(const std::vector<double>& coefs);
 	std::vector<std::complex<double>> roots();
+};
+
+class Quadratic : public Poly
+{
+public:
+	Quadratic(const std::vector<double>& coef);
+	std::vector<double> roots();
 };

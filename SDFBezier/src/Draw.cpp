@@ -1,5 +1,7 @@
 #include "Draw.h"
 
+#include "glm/geometric.hpp"
+
 #include <execution>
 #include <algorithm>
 
@@ -42,7 +44,7 @@ void drawCurve(Bezier& curve, const uint32_t& width, const uint32_t& height, uin
 
 		size_t index = y * width + x;
 		if (index < width * height)
-			array[index] = 0xffff00ff;
+			array[index] = 0xffff0000;
 	}
 }
 
@@ -81,12 +83,14 @@ void RenderCurve(Bezier& curve, const uint32_t& width, const uint32_t& height, u
 			{
 				glm::vec2 point{ x, y };
 				size_t index = yi * width + xi;
+				xi++;
+
+				const glm::vec2 pct = glm::step(point, curve.getTopRight()) * glm::step(curve.getBottomLeft(), point);
+				if (!(pct.x * pct.y)) continue;
 
 				float distance = curve.findClosestPoint(point, start).distance;
-
 				if (distance < 1e-05f)
 					array[index] = 0xff0000ff;
-				xi++;
 			}
 		});
 }

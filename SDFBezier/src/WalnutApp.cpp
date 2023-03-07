@@ -8,6 +8,8 @@
 #include "Bezier.h"
 #include "Draw.h"
 
+#include "Glyph.h"
+
 class ExampleLayer : public Walnut::Layer
 {
 public:
@@ -20,7 +22,8 @@ public:
 
 	virtual void OnAttach() override
 	{
-		
+		// vec2 tmp = step(st, topRight) * step(bottomLeft, st);
+		// float pct = tmp.x * tmp.y
 	}
 
 	virtual void OnUpdate(float ts) override
@@ -28,14 +31,15 @@ public:
 		const uint32_t width = m_Image->GetWidth();
 		const uint32_t height = m_Image->GetHeight();
 
+		if (!m_RenderCurve) return;
+
 		for (size_t i = 0; i < width * height; i++)
 			m_ImageData[i] = 0x00000000;
 
-		if (!m_RenderCurve) return;
-
 		{
 			const Walnut::ScopedTimer timer("render curve " + std::to_string(width) + '*' + std::to_string(height) + " pixels");
-			RenderCurve(m_Curve, width, height, m_ImageData);
+			for (auto& curve : glyph.m_Curves)
+				RenderCurve(curve, width, height, m_ImageData);
 		}
 
 		for (size_t i = 0; i < (height / 2 * width); i++)
@@ -70,23 +74,23 @@ public:
 
 		const size_t pointCount = m_Curve.getPointCount();
 
-		ImGui::InputFloat("p0x", &m_Curve.m_P_0.x, 0.01f, 1.f, "%.2f");
-		ImGui::InputFloat("p0y", &m_Curve.m_P_0.y, 0.01f, 1.f, "%.2f");
+		//ImGui::InputFloat("p0x", &m_Curve.m_P_0.x, 0.01f, 1.f, "%.2f");
+		//ImGui::InputFloat("p0y", &m_Curve.m_P_0.y, 0.01f, 1.f, "%.2f");
 
-		ImGui::InputFloat("p1x", &m_Curve.m_P_1.x, 0.01f, 1.f, "%.2f");
-		ImGui::InputFloat("p1y", &m_Curve.m_P_1.y, 0.01f, 1.f, "%.2f");
+		//ImGui::InputFloat("p1x", &m_Curve.m_P_1.x, 0.01f, 1.f, "%.2f");
+		//ImGui::InputFloat("p1y", &m_Curve.m_P_1.y, 0.01f, 1.f, "%.2f");
 
-		if (pointCount >= 3)
-		{
-			ImGui::InputFloat("p2x", &m_Curve.m_P_2.x, 0.01f, 1.f, "%.2f");
-			ImGui::InputFloat("p2y", &m_Curve.m_P_2.y, 0.01f, 1.f, "%.2f");
-		}
+		//if (pointCount >= 3)
+		//{
+		//	ImGui::InputFloat("p2x", &m_Curve.m_P_2.x, 0.01f, 1.f, "%.2f");
+		//	ImGui::InputFloat("p2y", &m_Curve.m_P_2.y, 0.01f, 1.f, "%.2f");
+		//}
 
-		if (pointCount == 4)
-		{
-			ImGui::InputFloat("p3x", &m_Curve.m_P_3.x, 0.01f, 1.f, "%.2f");
-			ImGui::InputFloat("p3y", &m_Curve.m_P_3.y, 0.01f, 1.f, "%.2f");
-		}
+		//if (pointCount == 4)
+		//{
+		//	ImGui::InputFloat("p3x", &m_Curve.m_P_3.x, 0.01f, 1.f, "%.2f");
+		//	ImGui::InputFloat("p3y", &m_Curve.m_P_3.y, 0.01f, 1.f, "%.2f");
+		//}
 
 		//ImGui::InputFloat("px", &m_Point.x, 0.01f, 1.f, "%.2f");
 		//ImGui::InputFloat("py", &m_Point.y, 0.01f, 1.f, "%.2f");
@@ -105,12 +109,13 @@ private:
 
 	glm::vec2 m_Point{ 0, 0 };
 
+	Glyph glyph{ "path/to/file", 'a' };
 
 	Bezier m_Curve = Bezier({ { 0.5, 0.5 },
 							  { 0. , 1. },
 							  { 1. , 1. },
 							  { 0.5, 0.5 } },
-		100
+		2000
 	);
 };
 
