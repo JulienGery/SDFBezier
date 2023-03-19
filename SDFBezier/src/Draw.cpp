@@ -1,8 +1,7 @@
 #include "Draw.h"
 
-#include "glm/geometric.hpp"
-
 #include <execution>
+#include <iostream>
 #include <algorithm>
 
 void drawSq(const glm::vec2& location, const size_t& width, const size_t& height, uint32_t* array, const size_t& length, const size_t& color)
@@ -29,7 +28,7 @@ void drawSq(const glm::vec2& location, const size_t& width, const size_t& height
 
 }
 
-void drawCurve(Bezier& curve, const uint32_t& width, const uint32_t& height, uint32_t* array)
+void drawCurve(const Bezier& curve, const uint32_t& width, const uint32_t& height, uint32_t* array)
 {
 	const size_t count = curve.m_Count;
 	for (size_t i = 0; i < count + 1; i++)
@@ -48,7 +47,7 @@ void drawCurve(Bezier& curve, const uint32_t& width, const uint32_t& height, uin
 	}
 }
 
-void drawDerivate(Bezier& curve, const uint32_t& width, const uint32_t& height, uint32_t* array)
+void drawDerivate(const Bezier& curve, const uint32_t& width, const uint32_t& height, uint32_t* array)
 {
 	const size_t count = curve.m_Count;
 	for (size_t i = 0; i < count + 1; i++)
@@ -67,10 +66,13 @@ void drawDerivate(Bezier& curve, const uint32_t& width, const uint32_t& height, 
 	}
 }
 
-void RenderCurve(Bezier& curve, const uint32_t& width, const uint32_t& height, uint32_t* array)
+void RenderCurve(const Bezier& curve, const uint32_t& width, const uint32_t& height, uint32_t* array)
 {
-	std::vector<size_t> vecHeight(height);
-	std::iota(vecHeight.begin(), vecHeight.end(), 0);
+	const glm::vec2 bottomLeft = curve.getBottomLeft();
+	const glm::vec2 topRight = curve.getTopRight();
+	const size_t curveHeght = (topRight.y - bottomLeft.y) * height + 1;
+	std::vector<size_t> vecHeight(curveHeght);
+	std::iota(vecHeight.begin(), vecHeight.end(), bottomLeft.y * height);
 
 	std::for_each(std::execution::par, vecHeight.begin(), vecHeight.end(),
 		[&curve, &width, &height, &array](const size_t& yi)
@@ -85,12 +87,46 @@ void RenderCurve(Bezier& curve, const uint32_t& width, const uint32_t& height, u
 				size_t index = yi * width + xi;
 				xi++;
 
-				const glm::vec2 pct = glm::step(point, curve.getTopRight()) * glm::step(curve.getBottomLeft(), point);
-				if (!(pct.x * pct.y)) continue;
-
-				float distance = curve.findClosestPoint(point, start).distance;
+				const float distance = curve.findClosestPoint(point, start).distance;
 				if (distance < 1e-05f)
 					array[index] = 0xff0000ff;
+			}
+		});
+}
+
+
+void renderGlyph(const Glyph& glyph, const size_t& width, const size_t& height, uint32_t* array)
+{
+	const glm::vec2 bottomLeft = glyph.getBottomLeft();
+	const glm::vec2 topRight = glyph.getTopRight();
+
+	size_t glyphHeight = (topRight.y - bottomLeft.y) * height;
+	if (glyphHeight > height)
+		glyphHeight = height;
+	std::vector<size_t> vecHeight(glyphHeight);
+	std::iota(vecHeight.begin(), vecHeight.end(), bottomLeft.y * height);
+
+	std::for_each(std::execution::par, vecHeight.begin(), vecHeight.end(),
+		[&glyph, &width, &height, &array](const size_t& yi)
+		{
+			const float y = (float)yi / (float)height;
+			double start = 0;
+
+			for (float x = 0.f; x < 1.f; x += 1.f / (float)width)
+			{
+				const glm::vec2 point{ x, y };
+				const size_t xi = x * width;
+				const size_t index = yi * width + xi;
+
+				if (!(index < width * height)) continue;
+
+				IndexRootDistancePoint PointAndDistance = glyph.findClosestPoint(point, start);
+				PointAndDistance.point -= point;
+				const glm::vec2 derivate = glyph.m_Curves[PointAndDistance.index].derivate(PointAndDistance.root);
+
+				const bool Inside = PointAndDistance.point.x * derivate.y - PointAndDistance.point.y * derivate.x < 0 ? 1 : 0; // if on the right it's inside
+				if (Inside)
+					array[index] = 0xff00ff00;
 			}
 		});
 }

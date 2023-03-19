@@ -22,8 +22,7 @@ public:
 
 	virtual void OnAttach() override
 	{
-		// vec2 tmp = step(st, topRight) * step(bottomLeft, st);
-		// float pct = tmp.x * tmp.y
+		
 	}
 
 	virtual void OnUpdate(float ts) override
@@ -37,10 +36,15 @@ public:
 			m_ImageData[i] = 0x00000000;
 
 		{
-			const Walnut::ScopedTimer timer("render curve " + std::to_string(width) + '*' + std::to_string(height) + " pixels");
-			for (auto& curve : glyph.m_Curves)
-				RenderCurve(curve, width, height, m_ImageData);
+			const Walnut::ScopedTimer timer("render glyph " + std::to_string(width) + '*' + std::to_string(height) + " pixels");
+			renderGlyph(m_glyph, width, height, m_ImageData);
 		}
+
+		//for (const auto& i : m_glyph.m_Curves)
+			//drawCurve(i, width, height, m_ImageData);
+
+		//drawSq(m_glyph.m_Curves[m_Index](0), width, height, m_ImageData, 21, 0xff00ff00);
+		//drawSq(m_glyph.m_Curves[m_Index](1), width, height, m_ImageData, 21, 0xff0000ff);
 
 		for (size_t i = 0; i < (height / 2 * width); i++)
 		{
@@ -48,7 +52,6 @@ public:
 			std::swap(m_ImageData[i], m_ImageData[y * width - width + (i % width)]);
 		}
 	}
-
 
 	virtual void OnUIRender() override
 	{
@@ -72,28 +75,10 @@ public:
 		ImGui::End();
 		ImGui::Begin("parameters");
 
-		const size_t pointCount = m_Curve.getPointCount();
+		ImGui::InputInt("Index", (int*)&m_Index, 1, 100);
 
-		//ImGui::InputFloat("p0x", &m_Curve.m_P_0.x, 0.01f, 1.f, "%.2f");
-		//ImGui::InputFloat("p0y", &m_Curve.m_P_0.y, 0.01f, 1.f, "%.2f");
-
-		//ImGui::InputFloat("p1x", &m_Curve.m_P_1.x, 0.01f, 1.f, "%.2f");
-		//ImGui::InputFloat("p1y", &m_Curve.m_P_1.y, 0.01f, 1.f, "%.2f");
-
-		//if (pointCount >= 3)
-		//{
-		//	ImGui::InputFloat("p2x", &m_Curve.m_P_2.x, 0.01f, 1.f, "%.2f");
-		//	ImGui::InputFloat("p2y", &m_Curve.m_P_2.y, 0.01f, 1.f, "%.2f");
-		//}
-
-		//if (pointCount == 4)
-		//{
-		//	ImGui::InputFloat("p3x", &m_Curve.m_P_3.x, 0.01f, 1.f, "%.2f");
-		//	ImGui::InputFloat("p3y", &m_Curve.m_P_3.y, 0.01f, 1.f, "%.2f");
-		//}
-
-		//ImGui::InputFloat("px", &m_Point.x, 0.01f, 1.f, "%.2f");
-		//ImGui::InputFloat("py", &m_Point.y, 0.01f, 1.f, "%.2f");
+		ImGui::InputFloat("px", &m_Point.x, 0.01f, 1.f, "%.2f");
+		ImGui::InputFloat("py", &m_Point.y, 0.01f, 1.f, "%.2f");
 
 		ImGui::InputInt("render curve", &m_RenderCurve, 0, 1);
 
@@ -107,16 +92,11 @@ private:
 	uint32_t* m_ImageData = nullptr;
 	int m_RenderCurve = 0;
 
-	glm::vec2 m_Point{ 0, 0 };
+	size_t m_Index = 0;
 
-	Glyph glyph{ "path/to/file", 'a' };
+	glm::vec2 m_Point{ 0.43, 0.1 };
 
-	Bezier m_Curve = Bezier({ { 0.5, 0.5 },
-							  { 0. , 1. },
-							  { 1. , 1. },
-							  { 0.5, 0.5 } },
-		2000
-	);
+	Glyph m_glyph{ "..\\polices\\times.ttf", '*' };
 };
 
 Walnut::Application* Walnut::CreateApplication(int argc, char** argv)

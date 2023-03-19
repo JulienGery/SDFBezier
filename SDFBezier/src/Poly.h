@@ -23,8 +23,7 @@ class Quintic : public Poly
 {
 public:
 	Quintic(const std::vector<double>& coefs);
-	std::vector<std::complex<double>> roots(double& start);
-	double startingPoint(const double& e, const double& d, const double& c, const double& b, const double& a);
+	std::vector<std::complex<double>> roots(double& start, const std::vector<float>& startingPoints);
 
 	template <class T>
 	T derivate(const T& t);
@@ -34,6 +33,9 @@ public:
 	T derivateThird(const T& t);
 	template <class T>
 	T derivateFourth(const T& t);
+
+private:
+	double findStartingPoint(const std::vector<float>& startingPoints);
 };
 
 class Quartic : public Poly

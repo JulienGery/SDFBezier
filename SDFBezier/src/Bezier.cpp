@@ -10,7 +10,7 @@ inline float distanceSq(const glm::vec2& a, const glm::vec2& b)
 	return glm::dot(tmp, tmp);
 }
 
-Custom Bezier::getClosestPoint(const std::vector<std::complex<double>>& roots, const glm::vec2& point)
+RootDistancePoint Bezier::getClosestPoint(const std::vector<std::complex<double>>& roots, const glm::vec2& point) const
 {
 	size_t size = 0;
 	std::vector<double> realRoots(roots.size());
@@ -23,6 +23,7 @@ Custom Bezier::getClosestPoint(const std::vector<std::complex<double>>& roots, c
 
 	glm::vec2 closestPoint = operator()(realRoots[0]);
 	float distance = distanceSq(closestPoint, point);
+	double root = realRoots[0];
 	for (size_t i = 1; i < size; i++)
 	{
 		glm::vec2 testPoint = operator()(realRoots[i]);
@@ -31,13 +32,14 @@ Custom Bezier::getClosestPoint(const std::vector<std::complex<double>>& roots, c
 		{
 			closestPoint = testPoint;
 			distance = testDistance;
+			root = realRoots[i];
 		}
 	}
 
-	return { distance, closestPoint };
+	return { root, distance, closestPoint };
 }
 
-glm::vec2 Bezier::Bezier3(const float& t)
+glm::vec2 Bezier::Bezier3(const float& t) const
 {
 	return m_P_0 +
 		3.f * t * (m_P_1 - m_P_0) +
@@ -51,14 +53,14 @@ glm::vec2 Bezier::Bezier3(const float& t)
 	// -pp_1
 }
 
-glm::vec2 Bezier::Bezier3Derivate(const float& t)
+glm::vec2 Bezier::Bezier3Derivate(const float& t) const
 {
 	return 3.f * (m_P_1 - m_P_0) 
 		+ 6.f * t * (m_P_2 - 2.f * m_P_1 + m_P_0) 
 		+ 3.f * t * t * (m_P_3 - 3.f * m_P_2 + 3.f * m_P_1 - m_P_0);
 }
 
-Custom Bezier::Bezier3FindClosestPoint(const glm::vec2& point, double& start)
+RootDistancePoint Bezier::Bezier3FindClosestPoint(const glm::vec2& point, double& start) const
 {
 	const glm::vec2 p = point - m_P_0;
 	const glm::vec2 p1 = m_P_1 - m_P_0;
@@ -74,7 +76,7 @@ Custom Bezier::Bezier3FindClosestPoint(const glm::vec2& point, double& start)
 	const float e = 3.f * glm::dot(p1, p1) - 2.f * glm::dot(p2, p); // t
 	const float f = -glm::dot(p1, p);
 
-	std::vector<std::complex<double>> roots = Quintic{ {f, e, d, c, b, a} }.roots(start);
+	std::vector<std::complex<double>> roots = Quintic{ {f, e, d, c, b, a} }.roots(start, m_Extremum);
 
 	return getClosestPoint(roots, point);
 }
@@ -110,14 +112,14 @@ void Bezier::Bezier3Extremum()
 	}
 }
 
-glm::vec2 Bezier::Bezier2(const float& t)
+glm::vec2 Bezier::Bezier2(const float& t) const
 {
 	return m_P_0 + 
 		2.f * t * (m_P_1 - m_P_0) + 
 		t * t * (m_P_2 - 2.0f * m_P_1 + m_P_0);
 }
 
-glm::vec2 Bezier::Bezier2Derivate(const float& t)
+glm::vec2 Bezier::Bezier2Derivate(const float& t) const
 {
 	return 2.f * (m_P_1 - m_P_0) +
 		2.0f * t * (m_P_2 - 2.0f * m_P_1 + m_P_0);
@@ -128,7 +130,7 @@ glm::vec2 Bezier::Bezier2Derivate(const float& t)
 
 }
 
-Custom Bezier::Bezier2FindClosestPoint(const glm::vec2& point)
+RootDistancePoint Bezier::Bezier2FindClosestPoint(const glm::vec2& point) const
 {
 	const glm::vec2 p = point - m_P_0;
 	const glm::vec2 p1 = m_P_1 - m_P_0;
@@ -159,12 +161,12 @@ void Bezier::Bezier2Extremum()
 	m_Extremum = {0, r1, r2, 1};
 }
 
-glm::vec2 Bezier::Bezier1(const float& t)
+glm::vec2 Bezier::Bezier1(const float& t) const
 {
 	return m_P_0 + t * (m_P_1 - m_P_0);
 }
 
-glm::vec2 Bezier::Bezier1Derivate(const float& t)
+glm::vec2 Bezier::Bezier1Derivate(const float& t) const
 {
 	return m_P_1 - m_P_0;
 
@@ -174,7 +176,7 @@ glm::vec2 Bezier::Bezier1Derivate(const float& t)
 	// -pp1
 }
 
-Custom Bezier::Bezier1FindClosestPoint(const glm::vec2& point)
+RootDistancePoint Bezier::Bezier1FindClosestPoint(const glm::vec2& point) const
 {
 	const glm::vec2 p = point - m_P_0;
 	const glm::vec2 p1 = m_P_1 - m_P_0;
@@ -185,7 +187,7 @@ Custom Bezier::Bezier1FindClosestPoint(const glm::vec2& point)
 	const double t = glm::clamp(- b / a, 0.0, 1.0);
 	const glm::vec2 closestPoint = operator()(t);
 
-	return { distanceSq(closestPoint, point), closestPoint };
+	return { t, distanceSq(closestPoint, point), closestPoint };
 }
 
 Bezier::Bezier(const std::vector<glm::vec2>& points, const size_t& count)
@@ -201,6 +203,8 @@ Bezier::Bezier(const std::vector<glm::vec2>& points, const size_t& count)
 		m_P_2 = points[2];
 	if (m_PointCount == 4)
 		m_P_3 = points[3];
+
+	updateExtremum();
 }
 
 Bezier::Bezier(const glm::vec2& point, const size_t& count)
@@ -220,7 +224,7 @@ Bezier::~Bezier()
 {
 }
 
-glm::vec2 Bezier::operator()(const float& t)
+glm::vec2 Bezier::operator()(const float& t) const
 {
 	if (m_PointCount == 4)
 		return Bezier3(t);
@@ -229,7 +233,7 @@ glm::vec2 Bezier::operator()(const float& t)
 	return Bezier1(t);
 }
 
-glm::vec2 Bezier::derivate(const float& t)
+glm::vec2 Bezier::derivate(const float& t) const
 {
 	if (m_PointCount == 4)
 		return Bezier3Derivate(t);
@@ -238,7 +242,7 @@ glm::vec2 Bezier::derivate(const float& t)
 	return Bezier1Derivate(t);
 }
 
-Custom Bezier::findClosestPoint(const glm::vec2& point, double& start)
+RootDistancePoint Bezier::findClosestPoint(const glm::vec2& point, double& start) const
 {
 	if (m_PointCount == 4)
 		return Bezier3FindClosestPoint(point, start);
@@ -277,6 +281,28 @@ void Bezier::updateExtremum()
 		m_ExtremumPoints[i] = operator()(m_Extremum[i]);
 
 	computeBoundingBox();
+}
+
+glm::vec2 Bezier::findClosestPointBoundingBox(const glm::vec2& point) const
+{
+	if (point.y > m_TopRight.y || point.y < m_BottomLeft.y)
+	{
+		float BLxToTRx = m_TopRight.x - m_BottomLeft.x;
+		float pointx = point.x - m_BottomLeft.x;
+		float lambda = glm::clamp(pointx / BLxToTRx, 0.f, 1.f);
+
+		if (point.y < m_BottomLeft.y)
+			return{ m_BottomLeft.x + BLxToTRx * lambda, m_BottomLeft.y };
+		return {m_BottomLeft.x + BLxToTRx * lambda, m_TopRight.y};
+	}
+
+	float BLyToTRy = m_TopRight.y - m_BottomLeft.y;
+	float pointy = point.y - m_BottomLeft.y;
+	float lambda = glm::clamp(pointy / BLyToTRy, 0.f, 1.f);
+
+	if (point.x < m_BottomLeft.x)
+		return { m_BottomLeft.x, m_BottomLeft.y + BLyToTRy * lambda };
+	return { m_TopRight.x, m_BottomLeft.y + BLyToTRy * lambda };
 }
 
 

@@ -79,7 +79,7 @@ std::string Poly::str()
 Quintic::Quintic(const std::vector<double>& coef) : Poly{ coef }
 {}
 
-std::vector<std::complex<double>> Quintic::roots(double& start)
+std::vector<std::complex<double>> Quintic::roots(double& start, const std::vector<float>& startingPoints)
 {
 	double a = m_Coefs[5];
 	double b = m_Coefs[4];
@@ -100,8 +100,8 @@ std::vector<std::complex<double>> Quintic::roots(double& start)
 
 	while (true)
 	{
-		if (count == 10) 
-			start = startingPoint(e, d, c, b, a);
+		if(count == 10)
+			start = findStartingPoint(startingPoints);
 
 		f = this->operator()(start);
 		if (glm::abs(f) < 1e-08) break;
@@ -161,44 +161,18 @@ std::vector<std::complex<double>> Quintic::roots(double& start)
 	return result;
 }
 
-double Quintic::startingPoint(const double& e, const double& d, const double& c, const double& b, const double& a)
+double Quintic::findStartingPoint(const std::vector<float>& startingPoints)
 {
-	Quartic quartic({ e, d * 2., c * 3., b * 4., a * 5. });
-	const std::vector<std::complex<double>> roots = quartic.roots();
-	std::vector<double> realsRoots(roots.size());
-
-	size_t size = 0;
-	for(const auto& root : roots)
-		if (root.imag() < 1e-08)
+	for (size_t i = 0; i < startingPoints.size(); i++)
+		if (operator()(startingPoints[i]) >= 0.)
 		{
-			realsRoots[size] = root.real();
-			size++;
+			if(i)
+				return (startingPoints[i] + startingPoints[i - 1]) / 2.0;
+			return startingPoints[i] - .1;
 		}
 
-	realsRoots.resize(size);
-
-	// sort vector
-
-	for (size_t i = 0; i < size; i++)
-	{
-		size_t minIndex = i;
-		for (size_t j = i + 1; j < size; j++)
-		{
-			if (realsRoots[minIndex] > realsRoots[j])
-				minIndex = j;
-		}
-		std::swap(realsRoots[minIndex], realsRoots[i]);
-	}
-
-	for (size_t i = 0; i < size; i++)
-		if (this->operator()(realsRoots[i]) >= 0)
-		{
-			if (i == 0)
-				return realsRoots[0] - 20.0;
-			return (realsRoots[i] + realsRoots[i - 1]) / 2.0;
-		}
-
-	return realsRoots[size - 1] + 20.0;
+	//throw std::runtime_error("pas trouvé de point de départ");
+	return startingPoints[startingPoints.size() - 1];
 }
 
 Quartic::Quartic(const std::vector<double>& coef) : Poly{ coef }

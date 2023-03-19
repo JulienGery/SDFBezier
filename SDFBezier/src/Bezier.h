@@ -6,8 +6,9 @@
 
 #include "glm/vec2.hpp"
 
-struct Custom // tmp struc will be removed
+struct RootDistancePoint // tmp struc will be removed
 {
+	double root;
 	float distance;
 	glm::vec2 point;
 };
@@ -26,9 +27,9 @@ public:
 	Bezier(const size_t& count);
 	~Bezier();
 
-	glm::vec2 operator() (const float& t);
-	glm::vec2 derivate(const float& t);
-	Custom findClosestPoint(const glm::vec2& point, double& start);
+	glm::vec2 operator() (const float& t) const;
+	glm::vec2 derivate(const float& t) const;
+	RootDistancePoint findClosestPoint(const glm::vec2& point, double& start) const;
 	
 	void addPoint(const glm::vec2& point);
 	void updateExtremum();
@@ -39,6 +40,8 @@ public:
 	glm::vec2 getBottomLeft() const { return m_BottomLeft; }
 	size_t getPointCount() const { return m_PointCount; }
 
+	glm::vec2 findClosestPointBoundingBox(const glm::vec2& point) const;
+
 private:
 	glm::vec2 m_TopRight = {}, m_BottomLeft = {};
 	std::vector<float> m_Extremum;
@@ -46,23 +49,23 @@ private:
 	size_t m_PointCount;
 
 	//Bezier3
-	glm::vec2 Bezier3(const float& t);
-	glm::vec2 Bezier3Derivate(const float& t);
-	Custom Bezier3FindClosestPoint(const glm::vec2& point, double& start);
+	glm::vec2 Bezier3(const float& t) const;
+	glm::vec2 Bezier3Derivate(const float& t) const;
+	RootDistancePoint Bezier3FindClosestPoint(const glm::vec2& point, double& start) const;
 	void Bezier3Extremum();
 
 	//Bezier2
-	glm::vec2 Bezier2(const float& t);
-	glm::vec2 Bezier2Derivate(const float& t);
-	Custom Bezier2FindClosestPoint(const glm::vec2& point);
+	glm::vec2 Bezier2(const float& t) const;
+	glm::vec2 Bezier2Derivate(const float& t) const;
+	RootDistancePoint Bezier2FindClosestPoint(const glm::vec2& point) const;
 	void Bezier2Extremum();
 
 	//Bezier1
-	glm::vec2 Bezier1(const float& t);
-	glm::vec2 Bezier1Derivate(const float& t);
-	Custom Bezier1FindClosestPoint(const glm::vec2& point);
+	glm::vec2 Bezier1(const float& t) const;
+	glm::vec2 Bezier1Derivate(const float& t) const;
+	RootDistancePoint Bezier1FindClosestPoint(const glm::vec2& point) const;
 
-	Custom getClosestPoint(const std::vector<std::complex<double>>& roots, const glm::vec2& point);
+	RootDistancePoint getClosestPoint(const std::vector<std::complex<double>>& roots, const glm::vec2& point) const;
 
 	void computeBoundingBox();
 };
