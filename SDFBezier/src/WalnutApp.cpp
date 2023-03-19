@@ -10,6 +10,11 @@
 
 #include "Glyph.h"
 
+float inline crossProduct(const glm::vec2& d, const glm::vec2& v)
+{
+	return d.x * v.y - d.y * v.x;
+}
+
 class ExampleLayer : public Walnut::Layer
 {
 public:
@@ -40,11 +45,28 @@ public:
 			renderGlyph(m_glyph, width, height, m_ImageData);
 		}
 
-		//for (const auto& i : m_glyph.m_Curves)
-			//drawCurve(i, width, height, m_ImageData);
+		for (const auto& i : m_glyph.m_Curves)
+			drawCurve(i, width, height, m_ImageData);
 
-		//drawSq(m_glyph.m_Curves[m_Index](0), width, height, m_ImageData, 21, 0xff00ff00);
-		//drawSq(m_glyph.m_Curves[m_Index](1), width, height, m_ImageData, 21, 0xff0000ff);
+		//drawCurve(m_glyph.m_Curves[m_Index], width, height, m_ImageData, 0xffff00ff);
+
+		//double start = 0;
+		//const auto result = m_glyph.inside(m_Point, start);
+		//const auto& curve = m_glyph.m_Curves[result.index];
+		//const glm::vec2 derivate = curve.derivate(result.root);
+		//const glm::vec2 vector = m_Point - result.point;
+		 
+		//drawCurve(curve, width, height, m_ImageData, 0xff0000ff);
+		//drawSq(result.point, width, height, m_ImageData, 21, 0xffffffff);
+
+		//std::cout << "v: " << vector.x << ' ' << vector.y << '\n';
+		//std::cout << "derivate: " << derivate.x << ' ' << derivate.y << '\n';
+		//std::cout << "cross: " << crossProduct(derivate, vector) << '\n';
+
+		//const uint32_t color = result.inside ? 0xff00ff00 : 0xffff0000;
+		//drawSq(m_Point, width, height, m_ImageData, 21, color);
+
+		//drawCurve(curve, width, height, m_ImageData, 0xff0000ff);
 
 		for (size_t i = 0; i < (height / 2 * width); i++)
 		{
@@ -77,8 +99,8 @@ public:
 
 		ImGui::InputInt("Index", (int*)&m_Index, 1, 100);
 
-		ImGui::InputFloat("px", &m_Point.x, 0.01f, 1.f, "%.2f");
-		ImGui::InputFloat("py", &m_Point.y, 0.01f, 1.f, "%.2f");
+		ImGui::InputFloat("px", &m_Point.x, 0.00001f, 1.f, "%.8f");
+		ImGui::InputFloat("py", &m_Point.y, 0.00001f, 1.f, "%.8f");
 
 		ImGui::InputInt("render curve", &m_RenderCurve, 0, 1);
 
@@ -94,9 +116,9 @@ private:
 
 	size_t m_Index = 0;
 
-	glm::vec2 m_Point{ 0.43, 0.1 };
+	glm::vec2 m_Point{ 0.21800001, 0.02800000 };
 
-	Glyph m_glyph{ "..\\polices\\times.ttf", '*' };
+	Glyph m_glyph{ "..\\polices\\times.ttf", 'I' };
 };
 
 Walnut::Application* Walnut::CreateApplication(int argc, char** argv)

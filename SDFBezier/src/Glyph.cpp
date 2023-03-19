@@ -7,6 +7,12 @@
 #include <chrono>
 #include <iostream>
 
+bool crossSign(const glm::vec2& d, const glm::vec2& v)
+{
+    return (d.x * v.y - d.y * v.x) < 0 ? true : false;
+}
+
+
 Glyph::Glyph(const std::string& path, const char& character)
 {
     m_Character = character;
@@ -17,8 +23,9 @@ Glyph::Glyph(const std::string& path, const char& character)
 
 bool inline pct(const glm::vec2& point, const Bezier& curve)
 {
-    const glm::vec2 _pct = glm::step(point, curve.getTopRight()) * glm::step(curve.getBottomLeft(), point);
-    return _pct.y * _pct.x;
+    const glm::vec2& topRight = curve.getTopRight();
+    const glm::vec2& botomLeft = curve.getBottomLeft();
+    return point.x > botomLeft.x && point.y > botomLeft.y && point.x < topRight.x && point.y < topRight.y;
 }
 
 inline float distanceSq(const glm::vec2& a, const glm::vec2& b)
@@ -127,79 +134,75 @@ void Glyph::BuildCurves(const OutLines& OutLines)
     }
 }
 
-//Custom Glyph::findClosestPoint(const glm::vec2& point, double& start) const
-//{
-//    Custom PointAndDistance;
-//    bool IsInsideBox = false;
-//    size_t BoxIndex;
-//
-//    //check if point is inside a bounding box
-//    for (size_t i = 0; i < m_Curves.size(); i++)
-//    {
-//        const auto& curve = m_Curves[i];
-//        if (pct(point, curve))
-//        {
-//            IsInsideBox = true;
-//            BoxIndex = i;
-//            PointAndDistance = curve.findClosestPoint(point, start);
-//            break;
-//        }
-//    }
-//
-//    if (IsInsideBox)
-//    {
-//        for (size_t i = 0; i < m_Curves.size(); i++)
-//            if (i != BoxIndex)
-//            {
-//                const auto& curve = m_Curves[i];
-//                if (pct(point, curve))
-//                {
-//                    const Custom test = curve.findClosestPoint(point, start);
-//                    if (test.distance < PointAndDistance.distance)
-//                        PointAndDistance = test;
-//                }
-//                else
-//                {
-//                    const glm::vec2 testPoint = curve.findClosestPointBoundingBox(point);
-//                    const float distance = distanceSq(testPoint, point);
-//                    if (distance < PointAndDistance.distance)
-//                    {
-//                        const Custom test = curve.findClosestPoint(point, start);
-//                        if (test.distance < PointAndDistance.distance)
-//                            PointAndDistance = test;
-//                    }
-//                }
-//            }
-//        return PointAndDistance;
-//    }
-//
-//    // if the point is not inside a bounding box we search for the closest bounding box 
-//    // which hold the closest point on a curve.
-//    // since the distance from the point to the closest point on a curve is always higher than 
-//    // the distance from the point to the closest point on a bouding box.
-//
-//    PointAndDistance.point = m_Curves[0].findClosestPointBoundingBox(point);
-//    PointAndDistance.distance = distanceSq(point, PointAndDistance.point);
-//
-//    for (size_t i = 1; i < m_Curves.size(); i++)
-//    {
-//        const glm::vec2 testPoint = m_Curves[i].findClosestPointBoundingBox(point);
-//        const float testDistance = distanceSq(point, testPoint);
-//        if (testDistance < PointAndDistance.distance)
-//        {
-//            const Custom test = m_Curves[i].findClosestPoint(point, start);
-//            if (test.distance < PointAndDistance.distance)
-//                PointAndDistance = test;
-//        }
-//    }
-//
-//    return PointAndDistance;
-//}
+// too messy
+IndexRootDistancePoint Glyph::inside(const glm::vec2& point, double& start) const
+{
+    bool isInside = false;
+    bool isinsideBox = false;
+    size_t StartingGlyphIndex = 0;
+    RootDistancePoint rootDistancePoint;
+    size_t index = 0;
+
+    for (size_t i = 0; i < m_Curves.size(); i++)
+    {
+        const Bezier& curve = m_Curves[i];
+        if (pct(point, curve))
+        {
+            isinsideBox = true;
+            rootDistancePoint = curve.findClosestPoint(point, start);
+            isInside = crossSign(curve.derivate(rootDistancePoint.root), point - rootDistancePoint.point);
+            StartingGlyphIndex = i;
+            index = i;
+            break;
+        }
+        else if (curve.getPointCount() == 2)
+            StartingGlyphIndex = i;
+    }
+
+    if (!isinsideBox)
+    {
+        rootDistancePoint = m_Curves[StartingGlyphIndex].findClosestPoint(point, start);
+        isInside = crossSign(m_Curves[StartingGlyphIndex].derivate(rootDistancePoint.root), point - rootDistancePoint.point);
+    }
+
+    for (size_t i = 0; i < m_Curves.size(); i++)
+    {
+        if (i == StartingGlyphIndex) continue;
+
+        const Bezier& curve = m_Curves[i];
+        RootDistancePoint test;
+
+        if (!pct(point, curve))
+        {
+            test.point = curve.findClosestPointBoundingBox(point);
+            test.distance = distanceSq(point, test.point);
+            if (test.distance > rootDistancePoint.distance) 
+                continue;
+        }
+
+        test = curve.findClosestPoint(point, start);
+        if (test.distance < rootDistancePoint.distance)
+        {
+            rootDistancePoint = test;
+            isInside = crossSign(m_Curves[i].derivate(test.root), point - test.point);
+            index = i;
+        }
+        else if (test.distance == rootDistancePoint.distance && !isInside)
+        {
+            isInside = crossSign(m_Curves[i].derivate(test.root), point - test.point);
+            rootDistancePoint = test;
+            index = i;
+        }
+    }
+
+    return {index, rootDistancePoint.root, rootDistancePoint.distance, rootDistancePoint.point, isInside};
+}
 
 
 IndexRootDistancePoint Glyph::findClosestPoint(const glm::vec2& point, double& start) const
 {
     size_t index = 0;
+    bool isInside = false;
     RootDistancePoint DistanceAndPoint = m_Curves[0].findClosestPoint(point, start);
     for (size_t i = 1; i < m_Curves.size(); i++)
     {
@@ -208,8 +211,47 @@ IndexRootDistancePoint Glyph::findClosestPoint(const glm::vec2& point, double& s
         {
             DistanceAndPoint = test;
             index = i;
+            isInside = crossSign(m_Curves[i].derivate(test.root), point - test.point);
+        }
+        else if (test.distance == DistanceAndPoint.distance)
+        {
+            if (!isInside && crossSign(m_Curves[i].derivate(test.root), point - test.point))
+            {
+                DistanceAndPoint = test;
+                index = i;
+                isInside = true;
+            }
         }
     }
 
     return { index, DistanceAndPoint.root, DistanceAndPoint.distance, DistanceAndPoint.point };
 }
+
+
+//bool Glyph::inside(const glm::vec2& point, double& start) const
+//{
+//    size_t index = 0;
+//    RootDistancePoint DistanceAndPoint = m_Curves[0].findClosestPoint(point, start);
+//    bool isInside = crossSign(DistanceAndPoint.point - point, m_Curves[0].derivate(DistanceAndPoint.root));
+//    for (size_t i = 1; i < m_Curves.size(); i++)
+//    {
+//        const RootDistancePoint test = m_Curves[i].findClosestPoint(point, start);
+//        if (test.distance < DistanceAndPoint.distance)
+//        {
+//            DistanceAndPoint = test;
+//            index = i;
+//            isInside = crossSign(test.point - point, m_Curves[i].derivate(test.root));
+//        }
+//        else if (test.distance == DistanceAndPoint.distance)
+//        {
+//            if (!isInside && crossSign(test.point - point, m_Curves[i].derivate(test.root)))
+//            {
+//                DistanceAndPoint = test;
+//                index = i;
+//                isInside = true;
+//            }
+//        }
+//    }
+//
+//    return isInside;
+//}

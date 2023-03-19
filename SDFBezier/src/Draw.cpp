@@ -28,7 +28,7 @@ void drawSq(const glm::vec2& location, const size_t& width, const size_t& height
 
 }
 
-void drawCurve(const Bezier& curve, const uint32_t& width, const uint32_t& height, uint32_t* array)
+void drawCurve(const Bezier& curve, const uint32_t& width, const uint32_t& height, uint32_t* array, const uint32_t& color)
 {
 	const size_t count = curve.m_Count;
 	for (size_t i = 0; i < count + 1; i++)
@@ -43,7 +43,7 @@ void drawCurve(const Bezier& curve, const uint32_t& width, const uint32_t& heigh
 
 		size_t index = y * width + x;
 		if (index < width * height)
-			array[index] = 0xffff0000;
+			array[index] = color;
 	}
 }
 
@@ -97,14 +97,12 @@ void RenderCurve(const Bezier& curve, const uint32_t& width, const uint32_t& hei
 
 void renderGlyph(const Glyph& glyph, const size_t& width, const size_t& height, uint32_t* array)
 {
-	const glm::vec2 bottomLeft = glyph.getBottomLeft();
-	const glm::vec2 topRight = glyph.getTopRight();
+	//const glm::vec2 bottomLeft = glyph.getBottomLeft();
+	//const glm::vec2 topRight = glyph.getTopRight();
+	//size_t glyphHeight = (topRight.y - bottomLeft.y) * height;
 
-	size_t glyphHeight = (topRight.y - bottomLeft.y) * height;
-	if (glyphHeight > height)
-		glyphHeight = height;
-	std::vector<size_t> vecHeight(glyphHeight);
-	std::iota(vecHeight.begin(), vecHeight.end(), bottomLeft.y * height);
+	std::vector<size_t> vecHeight(height);
+	std::iota(vecHeight.begin(), vecHeight.end(), 0);
 
 	std::for_each(std::execution::par, vecHeight.begin(), vecHeight.end(),
 		[&glyph, &width, &height, &array](const size_t& yi)
@@ -112,20 +110,14 @@ void renderGlyph(const Glyph& glyph, const size_t& width, const size_t& height, 
 			const float y = (float)yi / (float)height;
 			double start = 0;
 
-			for (float x = 0.f; x < 1.f; x += 1.f / (float)width)
+			for (size_t x = 0; x < width; x++)
 			{
-				const glm::vec2 point{ x, y };
-				const size_t xi = x * width;
+				const glm::vec2 point{ x / (float)width, y};
+				const size_t xi = x;
 				const size_t index = yi * width + xi;
-
-				if (!(index < width * height)) continue;
-
-				IndexRootDistancePoint PointAndDistance = glyph.findClosestPoint(point, start);
-				PointAndDistance.point -= point;
-				const glm::vec2 derivate = glyph.m_Curves[PointAndDistance.index].derivate(PointAndDistance.root);
-
-				const bool Inside = PointAndDistance.point.x * derivate.y - PointAndDistance.point.y * derivate.x < 0 ? 1 : 0; // if on the right it's inside
-				if (Inside)
+					
+				//if (!(index < width * height)) continue;
+				if (glyph.inside(point, start).inside)
 					array[index] = 0xff00ff00;
 			}
 		});

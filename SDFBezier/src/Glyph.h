@@ -18,6 +18,7 @@ struct IndexRootDistancePoint
 	double root;
 	float distance;
 	glm::vec2 point;
+	bool inside;
 };
 
 class Glyph
@@ -34,6 +35,7 @@ public:
 	glm::vec2 getTopRight() const { return m_TopRight; }
 
 	IndexRootDistancePoint findClosestPoint(const glm::vec2& point, double& start) const;
+	IndexRootDistancePoint inside(const glm::vec2& point, double& start) const;
 
 private:
 	glm::vec2 m_BottomLeft, m_TopRight;
