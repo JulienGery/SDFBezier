@@ -1,0 +1,105 @@
+#version 450
+
+#define EPSILON 1e-05
+#define MAXITERATION 200
+
+vec2 mul(in vec2 z, in vec2 zp)
+{
+    vec2 result;
+    result.x = z.x * zp.x - z.y * zp.y;
+    result.y = z.y * zp.x + z.x * zp.y;
+    return result;
+}
+
+vec2 div(in vec2 z, in vec2 zp)
+{
+    float bottom = zp.x * zp.x + zp.y * zp.y;
+    vec2 result = mul(z, vec2(zp.x, -zp.y));
+
+    return result / bottom;
+}
+
+vec2 f( in vec2 z, in vec2[6] coeff)
+{
+    vec2 tmp = vec2(1, 0);
+    vec2 result = coeff[0];
+    for(uint i = 1; i < 6; i++)
+    {
+        tmp = mul(tmp, z);
+        result += mul(coeff[i], tmp);
+
+    }
+    return result;
+}
+
+vec2 fp(vec2 z, in vec2[6] coeff)
+{
+    vec2 tmp = vec2(1, 0);
+    vec2 result = coeff[1];
+    for(uint i = 2; i < 6; i++)
+    {
+        tmp = mul(tmp, z);
+        result += mul(coeff[i] * float(i), tmp);
+    }
+    return result;
+}
+
+float absComplex(vec2 z)
+{
+    return sqrt(z.x * z.x + z.y * z.y);
+}
+
+vec2 sumOfAproximation(uint index, in vec2[5] values)
+{
+    vec2 result = vec2(0);
+    for(uint j = 0; j < 5; j++)
+        if (j != index)
+            result += div(vec2(1, 0), values[index] - values[j]) ;
+    return result;
+}
+
+layout (binding = 0) uniform ParameterUBO {
+    int maxIndex;
+} ubo;
+
+layout(std140, binding = 1) readonly buffer CoefficientIn
+{
+    vec2 Coefficients[ ][6];
+};
+
+layout(std140, binding = 2) buffer ParticleSSBOIn
+{
+    vec2 approximation[][5];
+};
+
+// layout(std140, binding = 3) buffer ParticleSSBOOut {
+//    vec2 nextApproximation[ ][5];
+// };
+
+layout (local_size_x = 5, local_size_y = 1, local_size_z = 1) in;
+
+
+void main()
+{
+    uint index = gl_GlobalInvocationID.x;
+    uint subIndex = index % 5;
+    uint indexGroup = (index - subIndex) / 5;
+
+    if(index < ubo.maxIndex)
+    {
+        for(uint i = 0; i < MAXITERATION; i++)
+        {
+            const vec2 z = approximation[indexGroup][subIndex];
+            const vec2 p = f(z, Coefficients[indexGroup]);
+            if(absComplex(p) < EPSILON)
+                break;
+
+            const vec2 pp = fp(z, Coefficients[indexGroup]);
+            const vec2 POverPP = div(p, pp);
+            const vec2 sum = sumOfAproximation(subIndex, approximation[indexGroup]);
+            approximation[indexGroup][subIndex] = z - div(POverPP, vec2(1, 0) - mul(POverPP, sum)); 
+        }
+    }
+}
+
+
