@@ -1,4 +1,7 @@
-#include "Tmp.h"
+#include "SolveQuinticGPU.h"
+#include "glm/vec2.hpp"
+#include "glm/vec4.hpp"
+#include "glm/geometric.hpp"
 
 #include <iostream>
 #include <exception>
@@ -7,9 +10,6 @@
 #include <fstream>
 #include <chrono>
 
-#include "glm/vec4.hpp"
-#include "glm/vec2.hpp"
-#include "glm/geometric.hpp"
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
