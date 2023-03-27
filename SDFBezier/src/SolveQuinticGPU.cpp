@@ -119,12 +119,12 @@ bool isDeviceSuitable(VkPhysicalDevice m_Device) {
 }
 
 
-void JESAISPAS::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
+void SolveQuinticGPU::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
     createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
     createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    createInfo.pfnUserCallback = JESAISPAS::debugCallback;
+    createInfo.pfnUserCallback = SolveQuinticGPU::debugCallback;
 }
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
@@ -170,7 +170,7 @@ bool checkValidationLayerSupport() {
     return true;
 }
 
-void JESAISPAS::execute()
+void SolveQuinticGPU::execute()
 {
     //need rework
     vkWaitForFences(m_Device, 1, &m_Fence, VK_TRUE, UINT64_MAX);
@@ -217,7 +217,7 @@ void JESAISPAS::execute()
      
 }
 
-void JESAISPAS::initVulkan()
+void SolveQuinticGPU::initVulkan()
 {
     createInstance();
     setupDebugMessenger();
@@ -234,7 +234,7 @@ void JESAISPAS::initVulkan()
     createSyncObjects();
 }
 
-void JESAISPAS::createInstance()
+void SolveQuinticGPU::createInstance()
 {
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
@@ -276,7 +276,7 @@ void JESAISPAS::createInstance()
     }
 }
 
-void JESAISPAS::setupDebugMessenger()
+void SolveQuinticGPU::setupDebugMessenger()
 {
     if (!enableValidationLayers) return;
 
@@ -288,7 +288,7 @@ void JESAISPAS::setupDebugMessenger()
     }
 }
 
-void JESAISPAS::pickPhysicalDevice()
+void SolveQuinticGPU::pickPhysicalDevice()
 {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(m_Instance, &deviceCount, nullptr);
@@ -310,7 +310,7 @@ void JESAISPAS::pickPhysicalDevice()
     }
 }
 
-void JESAISPAS::createLogicalDevice()
+void SolveQuinticGPU::createLogicalDevice()
 {
     QueueFamilyIndices indices = findQueueFamilies(m_PhysicalDevice);
 
@@ -348,7 +348,7 @@ void JESAISPAS::createLogicalDevice()
     vkGetDeviceQueue(m_Device, indices.computeFamily.value(), 0, &m_ComputeQueue);
 }
 
-void JESAISPAS::createComputeDescriptorSetLayout()
+void SolveQuinticGPU::createComputeDescriptorSetLayout()
 { 
     //NEED to set by the user
     std::array<VkDescriptorSetLayoutBinding, 3> layoutBindings{};
@@ -380,7 +380,7 @@ void JESAISPAS::createComputeDescriptorSetLayout()
     }
 }
 
-void JESAISPAS::createComputePipeline()
+void SolveQuinticGPU::createComputePipeline()
 {
     {
         auto computeShaderCode = readFile("shaders/comp.spv");
@@ -446,7 +446,7 @@ void JESAISPAS::createComputePipeline()
 }
 
 
-void JESAISPAS::executeInit()
+void SolveQuinticGPU::executeInit()
 {
     // rework here
     VkSubmitInfo submitInfo{};
@@ -481,7 +481,7 @@ void JESAISPAS::executeInit()
     vkResetFences(m_Device, 1, &m_Fence);
 }
 
-void JESAISPAS::getResult(std::vector<Roots>& result)
+void SolveQuinticGPU::getResult(std::vector<Roots>& result)
 {
     result.resize(POINT_COUNT);
 
@@ -500,7 +500,7 @@ void JESAISPAS::getResult(std::vector<Roots>& result)
     vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
 }
 
-void JESAISPAS::createCommandPool()
+void SolveQuinticGPU::createCommandPool()
 {
     QueueFamilyIndices queueFamilyIndices = findQueueFamilies(m_PhysicalDevice);
 
@@ -514,7 +514,7 @@ void JESAISPAS::createCommandPool()
     }
 }
 
-void JESAISPAS::createShaderStorageBuffers()
+void SolveQuinticGPU::createShaderStorageBuffers()
 {
     //can be set by the user
     // vector of coeffienct of the polynom
@@ -549,7 +549,7 @@ void JESAISPAS::createShaderStorageBuffers()
     vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
 }
 
-void JESAISPAS::createUniformBuffers()
+void SolveQuinticGPU::createUniformBuffers()
 {
     // no real need
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
@@ -561,7 +561,7 @@ void JESAISPAS::createUniformBuffers()
     }
 }
 
-void JESAISPAS::createDescriptorPool()
+void SolveQuinticGPU::createDescriptorPool()
 {
     std::array<VkDescriptorPoolSize, 2> poolSizes{};
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -581,7 +581,7 @@ void JESAISPAS::createDescriptorPool()
     }
 }
 
-void JESAISPAS::createComputeDescriptorSets()
+void SolveQuinticGPU::createComputeDescriptorSets()
 {
     std::vector<VkDescriptorSetLayout> layouts(1, m_ComputeDescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
@@ -637,7 +637,7 @@ void JESAISPAS::createComputeDescriptorSets()
     vkUpdateDescriptorSets(m_Device, 3, descriptorWrites.data(), 0, nullptr);
 }
 
-void JESAISPAS::createComputeCommandBuffers()
+void SolveQuinticGPU::createComputeCommandBuffers()
 {
 
     VkCommandBufferAllocateInfo allocInfo{};
@@ -651,7 +651,7 @@ void JESAISPAS::createComputeCommandBuffers()
     }
 }
 
-VkShaderModule JESAISPAS::createShaderModule(const std::vector<char>& code) {
+VkShaderModule SolveQuinticGPU::createShaderModule(const std::vector<char>& code) {
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = code.size();
@@ -665,7 +665,7 @@ VkShaderModule JESAISPAS::createShaderModule(const std::vector<char>& code) {
     return shaderModule;
 }
 
-uint32_t JESAISPAS::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+uint32_t SolveQuinticGPU::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &memProperties);
 
@@ -678,7 +678,7 @@ uint32_t JESAISPAS::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags pr
     throw std::runtime_error("failed to find suitable memory type!");
 }
 
-void JESAISPAS::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
+void SolveQuinticGPU::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = size;
@@ -705,7 +705,7 @@ void JESAISPAS::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemo
 }
 
 
-void JESAISPAS::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+void SolveQuinticGPU::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -738,7 +738,7 @@ void JESAISPAS::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize 
     vkFreeCommandBuffers(m_Device, m_CommandPool, 1, &commandBuffer);
 }
 
-void JESAISPAS::cleanup()
+void SolveQuinticGPU::cleanup()
 {
     vkDestroyPipeline(m_Device, m_ComputePipeline, nullptr);
     vkDestroyPipelineLayout(m_Device, m_ComputePipelineLayout, nullptr);
@@ -767,7 +767,7 @@ void JESAISPAS::cleanup()
     }
 }
 
-void JESAISPAS::recordComputeCommandBuffer(VkCommandBuffer commandBuffer)
+void SolveQuinticGPU::recordComputeCommandBuffer(VkCommandBuffer commandBuffer)
 {
     // asuming one command buffer curently, 256 threads at once
 
@@ -788,7 +788,7 @@ void JESAISPAS::recordComputeCommandBuffer(VkCommandBuffer commandBuffer)
     }
 }
 
-void JESAISPAS::createSyncObjects()
+void SolveQuinticGPU::createSyncObjects()
 {
     VkFenceCreateInfo fenceInfo{};
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -798,7 +798,7 @@ void JESAISPAS::createSyncObjects()
         throw std::runtime_error("failed to create fence\n");
 }
 
-void JESAISPAS::updateUBO()
+void SolveQuinticGPU::updateUBO()
 {
     UniformBufferObject ubo{};
     ubo.maxIndex = POINT_COUNT * 5;
@@ -808,7 +808,7 @@ void JESAISPAS::updateUBO()
 
 
 
-VKAPI_ATTR VkBool32 VKAPI_CALL JESAISPAS::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+VKAPI_ATTR VkBool32 VKAPI_CALL SolveQuinticGPU::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
     std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
