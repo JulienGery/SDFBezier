@@ -7,7 +7,7 @@
 #include <chrono>
 #include <iostream>
 
-bool crossSign(const glm::vec2& d, const glm::vec2& v)
+bool right(const glm::vec2& d, const glm::vec2& v)
 {
     return (d.x * v.y - d.y * v.x) < 0 ? true : false;
 }
@@ -134,8 +134,20 @@ void Glyph::BuildCurves(const OutLines& OutLines)
     }
 }
 
+void Glyph::computeBaryCentre()
+{
+    for (auto& i : m_Curves)
+        i.computeBarycentre();
+
+    m_Barycentre = m_Curves[0].getBarycentre();
+    for (size_t i = 1; i < m_Curves.size(); i++)
+        m_Barycentre += m_Curves[i].getBarycentre();
+
+    m_Barycentre /= m_Curves.size();
+}
+
 // too messy
-IndexRootDistancePoint Glyph::inside(const glm::vec2& point, double& start) const
+bool Glyph::inside(const glm::vec2& point, double& start) const
 {
     bool isInside = false;
     bool isinsideBox = false;
@@ -150,7 +162,7 @@ IndexRootDistancePoint Glyph::inside(const glm::vec2& point, double& start) cons
         {
             isinsideBox = true;
             rootDistancePoint = curve.findClosestPoint(point, start);
-            isInside = crossSign(curve.derivate(rootDistancePoint.root), point - rootDistancePoint.point);
+            isInside = right(curve.derivate(rootDistancePoint.root), point - rootDistancePoint.point);
             StartingGlyphIndex = i;
             index = i;
             break;
@@ -162,7 +174,8 @@ IndexRootDistancePoint Glyph::inside(const glm::vec2& point, double& start) cons
     if (!isinsideBox)
     {
         rootDistancePoint = m_Curves[StartingGlyphIndex].findClosestPoint(point, start);
-        isInside = crossSign(m_Curves[StartingGlyphIndex].derivate(rootDistancePoint.root), point - rootDistancePoint.point);
+        isInside = right(m_Curves[StartingGlyphIndex].derivate(rootDistancePoint.root), point - rootDistancePoint.point);
+        index = StartingGlyphIndex;
     }
 
     for (size_t i = 0; i < m_Curves.size(); i++)
@@ -179,23 +192,24 @@ IndexRootDistancePoint Glyph::inside(const glm::vec2& point, double& start) cons
             if (test.distance > rootDistancePoint.distance) 
                 continue;
         }
-
+        
         test = curve.findClosestPoint(point, start);
         if (test.distance < rootDistancePoint.distance)
         {
             rootDistancePoint = test;
-            isInside = crossSign(m_Curves[i].derivate(test.root), point - test.point);
+            isInside = right(m_Curves[i].derivate(test.root), point - test.point);
             index = i;
+
         }
         else if (test.distance == rootDistancePoint.distance && !isInside)
         {
-            isInside = crossSign(m_Curves[i].derivate(test.root), point - test.point);
+            isInside = right(m_Curves[i].derivate(test.root), point - test.point);
             rootDistancePoint = test;
             index = i;
         }
     }
 
-    return {index, rootDistancePoint.root, rootDistancePoint.distance, rootDistancePoint.point, isInside};
+    return isInside;
 }
 
 
@@ -211,11 +225,11 @@ IndexRootDistancePoint Glyph::findClosestPoint(const glm::vec2& point, double& s
         {
             DistanceAndPoint = test;
             index = i;
-            isInside = crossSign(m_Curves[i].derivate(test.root), point - test.point);
+            isInside = right(m_Curves[i].derivate(test.root), point - test.point);
         }
         else if (test.distance == DistanceAndPoint.distance)
         {
-            if (!isInside && crossSign(m_Curves[i].derivate(test.root), point - test.point))
+            if (!isInside && right(m_Curves[i].derivate(test.root), point - test.point))
             {
                 DistanceAndPoint = test;
                 index = i;
@@ -226,32 +240,3 @@ IndexRootDistancePoint Glyph::findClosestPoint(const glm::vec2& point, double& s
 
     return { index, DistanceAndPoint.root, DistanceAndPoint.distance, DistanceAndPoint.point };
 }
-
-
-//bool Glyph::inside(const glm::vec2& point, double& start) const
-//{
-//    size_t index = 0;
-//    RootDistancePoint DistanceAndPoint = m_Curves[0].findClosestPoint(point, start);
-//    bool isInside = crossSign(DistanceAndPoint.point - point, m_Curves[0].derivate(DistanceAndPoint.root));
-//    for (size_t i = 1; i < m_Curves.size(); i++)
-//    {
-//        const RootDistancePoint test = m_Curves[i].findClosestPoint(point, start);
-//        if (test.distance < DistanceAndPoint.distance)
-//        {
-//            DistanceAndPoint = test;
-//            index = i;
-//            isInside = crossSign(test.point - point, m_Curves[i].derivate(test.root));
-//        }
-//        else if (test.distance == DistanceAndPoint.distance)
-//        {
-//            if (!isInside && crossSign(test.point - point, m_Curves[i].derivate(test.root)))
-//            {
-//                DistanceAndPoint = test;
-//                index = i;
-//                isInside = true;
-//            }
-//        }
-//    }
-//
-//    return isInside;
-//}

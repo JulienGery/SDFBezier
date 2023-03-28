@@ -9,11 +9,11 @@ Poly::Poly(const std::vector<double>& coefs) : m_Coefs{ coefs }
 {}
 
 template <class T>
-T Poly::operator()(const T& t)
+T Quintic::operator()(const T& t)
 {
 	T result = m_Coefs[0];
 	T x = 1;
-	for (size_t i = 1; i < m_Coefs.size(); i++)
+	for (size_t i = 1; i < 6; i++)
 	{
 		x *= t;
 		result += m_Coefs[i] * x;
@@ -26,7 +26,7 @@ T Quintic::derivate(const T& t)
 {
 	T result = m_Coefs[1];
 	T x = 1;
-	for (size_t i = 2; i < m_Coefs.size(); i++)
+	for (size_t i = 2; i < 6; i++)
 	{
 		x *= t;
 		result += m_Coefs[i] * x * i;
@@ -39,7 +39,7 @@ T Quintic::derivateSecond(const T& t)
 {
 	T result = m_Coefs[2] * 2;
 	T x = 1;
-	for (size_t i = 3; i < m_Coefs.size(); i++)
+	for (size_t i = 3; i < 6; i++)
 	{
 		x *= t;
 		result += m_Coefs[i] * i * (i - 1) * x;
@@ -52,7 +52,7 @@ T Quintic::derivateThird(const T& t)
 {
 	T result = m_Coefs[3] * 6;
 	T x = 1;
-	for (size_t i = 4; i < m_Coefs.size(); i++)
+	for (size_t i = 4; i < 6; i++)
 	{
 		x *= t;
 		result += m_Coefs[i] * i * (i - 1) * (i - 2) * x;

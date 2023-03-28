@@ -110,6 +110,8 @@ void Bezier::Bezier3Extremum()
 				min = j;
 		std::swap(m_Extremum[i], m_Extremum[min]);
 	}
+	
+
 }
 
 glm::vec2 Bezier::Bezier2(const float& t) const
@@ -226,29 +228,41 @@ Bezier::~Bezier()
 
 glm::vec2 Bezier::operator()(const float& t) const
 {
-	if (m_PointCount == 4)
+	switch (m_PointCount)
+	{
+	case 4:
 		return Bezier3(t);
-	if (m_PointCount == 3)
+	case 3:
 		return Bezier2(t);
-	return Bezier1(t);
+	default:
+		return Bezier1(t);
+	}
 }
 
 glm::vec2 Bezier::derivate(const float& t) const
 {
-	if (m_PointCount == 4)
+	switch (m_PointCount)
+	{
+	case 4:
 		return Bezier3Derivate(t);
-	if (m_PointCount == 3)
+	case 3:
 		return Bezier2Derivate(t);
-	return Bezier1Derivate(t);
+	default:
+		return Bezier1Derivate(t);
+	}
 }
 
 RootDistancePoint Bezier::findClosestPoint(const glm::vec2& point, double& start) const
 {
-	if (m_PointCount == 4)
+	switch (m_PointCount)
+	{
+	case 4:
 		return Bezier3FindClosestPoint(point, start);
-	if (m_PointCount == 3)
+	case 3:
 		return Bezier2FindClosestPoint(point);
-	return Bezier1FindClosestPoint(point);
+	default:
+		return Bezier1FindClosestPoint(point);
+	}
 }
 
 void Bezier::addPoint(const glm::vec2& point)
@@ -285,7 +299,7 @@ void Bezier::updateExtremum()
 
 glm::vec2 Bezier::findClosestPointBoundingBox(const glm::vec2& point) const
 {
-	if (point.y > m_TopRight.y || point.y < m_BottomLeft.y)
+	if (point.y >= m_TopRight.y || point.y <= m_BottomLeft.y)
 	{
 		float BLxToTRx = m_TopRight.x - m_BottomLeft.x;
 		float pointx = point.x - m_BottomLeft.x;
@@ -300,7 +314,7 @@ glm::vec2 Bezier::findClosestPointBoundingBox(const glm::vec2& point) const
 	float pointy = point.y - m_BottomLeft.y;
 	float lambda = glm::clamp(pointy / BLyToTRy, 0.f, 1.f);
 
-	if (point.x < m_BottomLeft.x)
+	if (point.x <= m_BottomLeft.x)
 		return { m_BottomLeft.x, m_BottomLeft.y + BLyToTRy * lambda };
 	return { m_TopRight.x, m_BottomLeft.y + BLyToTRy * lambda };
 }
@@ -323,4 +337,18 @@ void Bezier::computeBoundingBox()
 		if (i.y < m_BottomLeft.y)
 			m_BottomLeft.y = i.y;
 	}
+}
+
+void Bezier::computeBarycentre()
+{
+	m_Barycentre = m_P_0;
+
+	if (m_PointCount >= 2)
+		m_Barycentre += m_P_1;
+	if (m_PointCount >= 3)
+		m_Barycentre += m_P_2;
+	if (m_PointCount == 4)
+		m_Barycentre += m_P_3;
+
+	m_Barycentre /= m_PointCount;
 }

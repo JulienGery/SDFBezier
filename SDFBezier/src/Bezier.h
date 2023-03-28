@@ -36,16 +36,20 @@ public:
 
 	std::vector<float> getExtremum() const { return m_Extremum; }
 	std::vector<glm::vec2> getExtrmumPoints() const { return m_ExtremumPoints; }
+	std::vector<glm::vec2> getInflextionPoints() const { return m_InflextionPoints; }
 	glm::vec2 getTopRight() const { return m_TopRight; }
 	glm::vec2 getBottomLeft() const { return m_BottomLeft; }
 	size_t getPointCount() const { return m_PointCount; }
+	const glm::vec2 getBarycentre() const { return m_Barycentre; }
+
+	void computeBarycentre();
 
 	glm::vec2 findClosestPointBoundingBox(const glm::vec2& point) const;
 
 private:
-	glm::vec2 m_TopRight = {}, m_BottomLeft = {};
+	glm::vec2 m_TopRight, m_BottomLeft, m_Barycentre;
 	std::vector<float> m_Extremum;
-	std::vector<glm::vec2> m_ExtremumPoints;
+	std::vector<glm::vec2> m_ExtremumPoints, m_InflextionPoints;
 	size_t m_PointCount;
 
 	//Bezier3

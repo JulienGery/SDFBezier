@@ -115,9 +115,9 @@ void renderGlyph(const Glyph& glyph, const size_t& width, const size_t& height, 
 				const glm::vec2 point{ x / (float)width, y};
 				const size_t xi = x;
 				const size_t index = yi * width + xi;
-					
+				
 				//if (!(index < width * height)) continue;
-				if (glyph.inside(point, start).inside)
+				if (glyph.inside(point, start))
 					array[index] = 0xff00ff00;
 			}
 		});

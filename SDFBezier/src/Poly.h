@@ -12,9 +12,6 @@ public:
 	std::string str();
 
 	Poly (const std::vector<double>& coefs);
-	template <class T>
-	T operator()(const T& t);
-	
 };
 
 // dirty way to find roots of quintic.
@@ -25,6 +22,8 @@ public:
 	Quintic(const std::vector<double>& coefs);
 	std::vector<std::complex<double>> roots(double& start, const std::vector<float>& startingPoints);
 
+	template <class T>
+	T operator()(const T& t);
 	template <class T>
 	T derivate(const T& t);
 	template <class T>

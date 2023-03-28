@@ -1,0 +1,68 @@
+#version 450
+
+layout (binding = 0) uniform ParameterUBO {
+    vec2 P_0, p1, p2, p3;
+    int maxIndex, width, height, polynomSize, curveIndex;
+} ubo;
+
+layout(std140, binding = 2) readonly buffer ParticleSSBOIn
+{
+    vec4 roots[][5];
+};
+
+layout(std140, binding = 3) buffer currentClosesetPoints
+{
+    vec4 closestPoints[];
+    //layout: distance, inside, root, curveIndex
+};
+
+bool right(const in vec2 d, const in vec2 v)
+{
+    return (d.x * v.y - d.y * v.x) < 0 ? true: false;
+}
+
+vec2 Bezier(float t)
+{
+    return ubo.P_0 +
+    3.f * t * ubo.p1 +
+    3.f * t * t * ubo.p2 +
+    t * t * t * ubo.p3;
+}
+
+vec2 DBezier(float t)
+{
+    return 3.f * ubo.p1
+		+ 6.f * t * ubo.p2 
+		+ 3.f * t * t * ubo.p3;
+}
+
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+    const uint index = gl_GlobalInvocationID.x;
+    if(index < ubo.maxIndex)
+    {
+        const float x = index % ubo.width;
+        const float y = (index - x) / ubo.width;
+        const vec2 point = vec2(x / ubo.width, y / ubo.height);
+
+        for(uint i = 0; i < 5; i++)
+        {
+            const vec2 root = roots[index][i].xy;
+            if(abs(root.y) < 1e-05)
+            {
+                float real = root.x;
+                real = clamp(real, 0.f, 1.f);
+                const vec2 Candidate = Bezier(real);
+                const float dis = distance(Candidate, point);
+                const bool inside = right(DBezier(real), point);
+
+                if(dis < closestPoints[index].x)
+                    closestPoints[index] = vec4(dis, inside, real, ubo.curveIndex);
+                else if (inside && !bool(closestPoints[index].y) && dis == closestPoints[index].x)
+                    closestPoints[index] = vec4(dis, inside, real, ubo.curveIndex);
+            }
+        }
+    }
+}
