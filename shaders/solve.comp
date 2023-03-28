@@ -88,15 +88,15 @@ void main()
         {
             const vec2 z = approximation[indexGroup][subIndex];
             const vec2 p = f(z, Coefficients[indexGroup]);
-            if(absComplex(p) < EPSILON)
-                break;
 
             const vec2 pp = fp(z, Coefficients[indexGroup]);
             const vec2 POverPP = div(p, pp);
             const vec2 sum = sumOfAproximation(subIndex, approximation[indexGroup]);
-            approximation[indexGroup][subIndex] = z - div(POverPP, vec2(1, 0) - mul(POverPP, sum)); 
+            const vec2 zPlusOne = z - div(POverPP, vec2(1, 0) - mul(POverPP, sum));
+            approximation[indexGroup][subIndex] = zPlusOne;
+            if(absComplex(z - zPlusOne) < EPSILON)
+                break;
         }
     }
 }
-
 
