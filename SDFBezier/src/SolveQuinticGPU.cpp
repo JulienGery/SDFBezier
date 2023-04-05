@@ -170,14 +170,6 @@ void SolveQuinticGPU::execute()
     recordComputeCommandBuffer(m_ComputeCommandBuffer, m_ComputePipeline, m_ComputePipelineLayout, m_Width * m_Height / 80 + 1);
     submitCommandBuffer(m_ComputeCommandBuffer);
 
-    vkResetCommandBuffer(m_ComputeCommandBuffer, 0);
-    recordComputeCommandBuffer(m_ComputeCommandBuffer, m_ComputePointsPipeline, m_ComputePointsPipelineLayout, m_Width * m_Height / 64 + 1);
-    submitCommandBuffer(m_ComputeCommandBuffer);
-
-    vkResetCommandBuffer(m_ComputeCommandBuffer, 0);
-    recordComputeCommandBuffer(m_ComputeCommandBuffer, m_ComputePipelineInit, m_ComputePipelineInitLayout, m_Width * m_Height / 64 + 1);
-    submitCommandBuffer(m_ComputeCommandBuffer);
-
     const auto end = std::chrono::high_resolution_clock::now();
     const auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
@@ -400,7 +392,6 @@ void SolveQuinticGPU::createComputePipeline()
     createComputePipelineHelper("../shaders/buildCoef.spv", m_BuildCoefPipeline, m_BuildCoefPipelineLayout);
     createComputePipelineHelper("../shaders/init.spv", m_ComputePipelineInit, m_ComputePipelineInitLayout);
     createComputePipelineHelper("../shaders/solve.spv", m_ComputePipeline, m_ComputePipelineLayout);
-    createComputePipelineHelper("../shaders/computePointsCurves.spv", m_ComputePointsPipeline, m_ComputePointsPipelineLayout);
 }
 
 std::vector<glm::vec4> SolveQuinticGPU::getResult()
@@ -444,7 +435,6 @@ void SolveQuinticGPU::createShaderStorageBuffers()
     //TODO remove bits
     createBuffer(bufferSize * sizeof(Coeff), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_CoefBuffer, m_CoefBufferMemory);
     createBuffer(bufferSize * sizeof(Roots), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_ApproximationBuffer, m_ApproximationBufferMemory);
-    createBuffer(bufferSize * sizeof(glm::vec4), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_closestPoints, m_closestPointsMemory);
 }
 
 void SolveQuinticGPU::createUniformBuffers()
@@ -496,7 +486,7 @@ void SolveQuinticGPU::createComputeDescriptorSets()
     uniformBufferInfo.offset = 0;
     uniformBufferInfo.range = sizeof(UniformBufferObject);
 
-    std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
+    std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
     descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     descriptorWrites[0].dstSet = m_ComputeDescriptorSet;
     descriptorWrites[0].dstBinding = 0;
@@ -531,20 +521,7 @@ void SolveQuinticGPU::createComputeDescriptorSets()
     descriptorWrites[2].descriptorCount = 1;
     descriptorWrites[2].pBufferInfo = &storageCurrentApproximation;
 
-    VkDescriptorBufferInfo storageClosestPoints{};
-    storageClosestPoints.buffer = m_closestPoints;
-    storageClosestPoints.offset = 0;
-    storageClosestPoints.range = sizeof(glm::vec4) * m_Width * m_Height;
-
-    descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrites[3].dstSet = m_ComputeDescriptorSet;
-    descriptorWrites[3].dstBinding = 3;
-    descriptorWrites[3].dstArrayElement = 0;
-    descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    descriptorWrites[3].descriptorCount = 1;
-    descriptorWrites[3].pBufferInfo = &storageClosestPoints;
-
-    vkUpdateDescriptorSets(m_Device, 4, descriptorWrites.data(), 0, nullptr);
+    vkUpdateDescriptorSets(m_Device, 3, descriptorWrites.data(), 0, nullptr);
 }
 
 void SolveQuinticGPU::createComputeCommandBuffers()
@@ -654,8 +631,6 @@ void SolveQuinticGPU::cleanup()
     vkDestroyPipelineLayout(m_Device, m_ComputePipelineLayout, nullptr);
     vkDestroyPipeline(m_Device, m_BuildCoefPipeline, nullptr);
     vkDestroyPipelineLayout(m_Device, m_BuildCoefPipelineLayout, nullptr);
-    vkDestroyPipeline(m_Device, m_ComputePointsPipeline, nullptr);
-    vkDestroyPipelineLayout(m_Device, m_ComputePointsPipelineLayout, nullptr);
     vkDestroyPipeline(m_Device, m_ComputePipelineInit, nullptr);
     vkDestroyPipelineLayout(m_Device, m_ComputePipelineInitLayout, nullptr);
 
@@ -665,8 +640,6 @@ void SolveQuinticGPU::cleanup()
     vkFreeMemory(m_Device, m_ApproximationBufferMemory, nullptr);
     vkDestroyBuffer(m_Device, m_CoefBuffer, nullptr);
     vkFreeMemory(m_Device, m_CoefBufferMemory, nullptr);
-    vkDestroyBuffer(m_Device, m_closestPoints, nullptr);
-    vkFreeMemory(m_Device, m_closestPointsMemory, nullptr);
 
     vkDestroyDescriptorPool(m_Device, m_DescriptorPool, nullptr);
     vkDestroyDescriptorSetLayout(m_Device, m_ComputeDescriptorSetLayout, nullptr);

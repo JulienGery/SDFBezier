@@ -70,8 +70,6 @@ private:
     VkPipeline m_ComputePipeline;
     VkPipelineLayout m_BuildCoefPipelineLayout;
     VkPipeline m_BuildCoefPipeline;
-    VkPipelineLayout m_ComputePointsPipelineLayout;
-    VkPipeline m_ComputePointsPipeline;
     VkPipelineLayout m_ComputePipelineInitLayout;
     VkPipeline m_ComputePipelineInit;
 
@@ -79,9 +77,6 @@ private:
     VkDeviceMemory m_CoefBufferMemory;
     VkBuffer m_ApproximationBuffer;
     VkDeviceMemory m_ApproximationBufferMemory;
-
-    VkBuffer m_closestPoints;
-    VkDeviceMemory m_closestPointsMemory;
 
     VkBuffer m_UniformBuffer;
     VkDeviceMemory m_UniformBufferMemory;

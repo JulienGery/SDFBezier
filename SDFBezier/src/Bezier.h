@@ -1,75 +1,21 @@
 #pragma once
 
-#include <variant>
 #include <vector>
-#include <complex>
 
 #include "glm/vec2.hpp"
 
-struct RootDistancePoint // tmp struc will be removed
+struct Bezier
 {
-	double root;
-	float distance;
-	glm::vec2 point;
-};
+	glm::vec2 P_0{0}, P_1{0}, P_2{0}, P_3{0};
 
-class Bezier
-{
-public:
-	size_t m_Count;
-	glm::vec2 m_P_0 = { 0., 0. }, 
-		m_P_1 = { 0., 0. },
-		m_P_2 = { 0., 0. }, 
-		m_P_3 = { 0., 0. };
-
-	Bezier(const std::vector<glm::vec2>& points, const size_t& count);
-	Bezier(const glm::vec2& point, const size_t& count);
-	Bezier(const size_t& count);
-	~Bezier();
-
-	glm::vec2 operator() (const float& t) const;
-	glm::vec2 derivate(const float& t) const;
-	RootDistancePoint findClosestPoint(const glm::vec2& point, double& start) const;
-	
-	void addPoint(const glm::vec2& point);
-	void updateExtremum();
-
-	std::vector<float> getExtremum() const { return m_Extremum; }
-	std::vector<glm::vec2> getExtrmumPoints() const { return m_ExtremumPoints; }
-	std::vector<glm::vec2> getInflextionPoints() const { return m_InflextionPoints; }
-	glm::vec2 getTopRight() const { return m_TopRight; }
-	glm::vec2 getBottomLeft() const { return m_BottomLeft; }
-	size_t getPointCount() const { return m_PointCount; }
-	const glm::vec2 getBarycentre() const { return m_Barycentre; }
-
-	void computeBarycentre();
-
-	glm::vec2 findClosestPointBoundingBox(const glm::vec2& point) const;
-
-private:
-	glm::vec2 m_TopRight, m_BottomLeft, m_Barycentre;
-	std::vector<float> m_Extremum;
-	std::vector<glm::vec2> m_ExtremumPoints, m_InflextionPoints;
-	size_t m_PointCount;
-
-	//Bezier3
-	glm::vec2 Bezier3(const float& t) const;
-	glm::vec2 Bezier3Derivate(const float& t) const;
-	RootDistancePoint Bezier3FindClosestPoint(const glm::vec2& point, double& start) const;
-	void Bezier3Extremum();
-
-	//Bezier2
-	glm::vec2 Bezier2(const float& t) const;
-	glm::vec2 Bezier2Derivate(const float& t) const;
-	RootDistancePoint Bezier2FindClosestPoint(const glm::vec2& point) const;
-	void Bezier2Extremum();
-
-	//Bezier1
-	glm::vec2 Bezier1(const float& t) const;
-	glm::vec2 Bezier1Derivate(const float& t) const;
-	RootDistancePoint Bezier1FindClosestPoint(const glm::vec2& point) const;
-
-	RootDistancePoint getClosestPoint(const std::vector<std::complex<double>>& roots, const glm::vec2& point) const;
-
-	void computeBoundingBox();
+	std::vector<glm::vec2> GetVectors() const
+	{
+		
+		return {
+			P_0,
+			P_1 - P_0,
+			P_2 - 2.f * P_1 + P_0,
+			P_3 - 3.f * P_2 + 3.f * P_1 - P_0
+			};
+	}
 };
