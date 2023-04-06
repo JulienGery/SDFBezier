@@ -16,6 +16,13 @@ struct Roots
         return _roots[index];
     }
 
+    bool operator==(const Roots& a) const
+    {
+        for (size_t i = 0; i < 5; i++)
+            if (a._roots[i] != _roots[i])
+                return false;
+        return true;
+    }
 };
 
 struct Coeff
@@ -50,6 +57,9 @@ public:
 	~SolveQuinticGPU() { cleanup(); }
 
     void execute();
+    std::vector<Roots> getResult();
+    std::vector<Coeff> getCoeff();
+
 
 private:
     size_t m_Width = 540, m_Height = 960;
@@ -112,8 +122,6 @@ private:
 
     void updateUBO();
     void createComputePipelineHelper(const std::string& path, VkPipeline& pipeline, VkPipelineLayout& pipelineLayout);
-
-    std::vector<glm::vec4> getResult();
 
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);

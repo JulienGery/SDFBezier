@@ -8,9 +8,8 @@
 #include <array>
 #include <optional>
 #include <fstream>
-#include <chrono>
+#include <Walnut/Timer.h>
 
-#define NDEBUG 1
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
 #else
@@ -152,36 +151,31 @@ bool checkValidationLayerSupport() {
 
 void SolveQuinticGPU::execute()
 {
-    //need rework
-
-    const auto start = std::chrono::high_resolution_clock::now();
-
     updateUBO();
 
+    Walnut::ScopedTimer total{"total"};
     vkResetCommandBuffer(m_ComputeCommandBuffer, 0);
     recordComputeCommandBuffer(m_ComputeCommandBuffer, m_BuildCoefPipeline, m_BuildCoefPipelineLayout, m_Width * m_Height / 64 + 1);
-    submitCommandBuffer(m_ComputeCommandBuffer);
+        
+    {
+        Walnut::ScopedTimer timer{"buildCoef"};
+        submitCommandBuffer(m_ComputeCommandBuffer);
+    }
 
     vkResetCommandBuffer(m_ComputeCommandBuffer, 0);
     recordComputeCommandBuffer(m_ComputeCommandBuffer, m_ComputePipelineInit, m_ComputePipelineInitLayout, m_Width * m_Height / 64 + 1);
-    submitCommandBuffer(m_ComputeCommandBuffer);
+    {
+        Walnut::ScopedTimer timer{"init"};
+        submitCommandBuffer(m_ComputeCommandBuffer);
+    }
 
     vkResetCommandBuffer(m_ComputeCommandBuffer, 0);
-    recordComputeCommandBuffer(m_ComputeCommandBuffer, m_ComputePipeline, m_ComputePipelineLayout, m_Width * m_Height / 80 + 1);
-    submitCommandBuffer(m_ComputeCommandBuffer);
-
-    const auto end = std::chrono::high_resolution_clock::now();
-    const auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
-    std::cout << "delta: " << delta.count() << "ms\n";
-
-    /*const std::vector<glm::vec4> result = getResult();
-    for (const auto& i : result)
+    recordComputeCommandBuffer(m_ComputeCommandBuffer, m_ComputePipeline, m_ComputePipelineLayout, m_Width * m_Height / 64 + 1);
     {
-        std::cout << i.x << ' ';
-    }*/
+        Walnut::ScopedTimer timer{"solve"};
+        submitCommandBuffer(m_ComputeCommandBuffer);
+    }
 
-     
 }
 
 void SolveQuinticGPU::initVulkan()
@@ -317,8 +311,7 @@ void SolveQuinticGPU::createLogicalDevice()
 
 void SolveQuinticGPU::createComputeDescriptorSetLayout()
 { 
-    //NEED to set by the user
-    std::array<VkDescriptorSetLayoutBinding, 4> layoutBindings{};
+    std::array<VkDescriptorSetLayoutBinding, 3> layoutBindings{};
     layoutBindings[0].binding = 0;
     layoutBindings[0].descriptorCount = 1;
     layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -337,15 +330,9 @@ void SolveQuinticGPU::createComputeDescriptorSetLayout()
     layoutBindings[2].pImmutableSamplers = nullptr;
     layoutBindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
-    layoutBindings[3].binding = 3;
-    layoutBindings[3].descriptorCount = 1;
-    layoutBindings[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    layoutBindings[3].pImmutableSamplers = nullptr;
-    layoutBindings[3].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = 4;
+    layoutInfo.bindingCount = 3;
     layoutInfo.pBindings = layoutBindings.data();
 
     if (vkCreateDescriptorSetLayout(m_Device, &layoutInfo, nullptr, &m_ComputeDescriptorSetLayout) != VK_SUCCESS) {
@@ -388,16 +375,36 @@ void SolveQuinticGPU::createComputePipelineHelper(const std::string& path, VkPip
 
 void SolveQuinticGPU::createComputePipeline()
 {
-    //TODO change pipeline to stages;
     createComputePipelineHelper("../shaders/buildCoef.spv", m_BuildCoefPipeline, m_BuildCoefPipelineLayout);
     createComputePipelineHelper("../shaders/init.spv", m_ComputePipelineInit, m_ComputePipelineInitLayout);
     createComputePipelineHelper("../shaders/solve.spv", m_ComputePipeline, m_ComputePipelineLayout);
 }
 
-std::vector<glm::vec4> SolveQuinticGPU::getResult()
+std::vector<Roots> SolveQuinticGPU::getResult()
 {
-    std::vector<glm::vec4> result(m_Width * m_Height);
-    const size_t BufferSize = result.size() * sizeof(glm::vec4);
+    std::vector<Roots> result(m_Width * m_Height);
+    const size_t BufferSize = result.size() * sizeof(Roots);
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    createBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+    void* data;
+    vkMapMemory(m_Device, stagingBufferMemory, 0, result.size(), 0, &data);
+    copyBuffer(m_ApproximationBuffer, stagingBuffer, BufferSize);
+    memcpy(result.data(), data, BufferSize);
+    vkUnmapMemory(m_Device, stagingBufferMemory);
+
+    vkDestroyBuffer(m_Device, stagingBuffer, nullptr);
+    vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
+
+    return result;
+}
+
+std::vector<Coeff> SolveQuinticGPU::getCoeff()
+{
+    std::vector<Coeff> result(m_Width * m_Height);
+    const size_t BufferSize = result.size() * sizeof(Coeff);
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -432,7 +439,6 @@ void SolveQuinticGPU::createCommandPool()
 void SolveQuinticGPU::createShaderStorageBuffers()
 {
     VkDeviceSize bufferSize = m_Width * m_Height;
-    //TODO remove bits
     createBuffer(bufferSize * sizeof(Coeff), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_CoefBuffer, m_CoefBufferMemory);
     createBuffer(bufferSize * sizeof(Roots), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_ApproximationBuffer, m_ApproximationBufferMemory);
 }
