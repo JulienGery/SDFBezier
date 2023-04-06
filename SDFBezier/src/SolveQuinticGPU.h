@@ -62,7 +62,7 @@ public:
 
 
 private:
-    size_t m_Width = 540, m_Height = 960;
+    size_t m_Width = 1920, m_Height = 1080;
     VkInstance m_Instance;
     VkDebugUtilsMessengerEXT m_DebugMessenger;
 
