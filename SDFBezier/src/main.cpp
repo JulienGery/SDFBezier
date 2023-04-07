@@ -52,11 +52,17 @@ int main()
 	const std::vector<Roots> result = solver.getResult();
 	const std::vector<Coeff> coef = solver.getCoeff();
 
+	bool good = true;
+
 	for (size_t i = 0; i < result.size(); i++)
 		if (!valid(result[i], coef[i]))
 		{
+			good = false;
 			coutCoeff(coef[i]);
 			coutRoot(result[i]);
 			std::cin.get();
 		}
+
+	if (good)
+		std::cout << "\033[32mIt's all good!\n\033[0m";
 }

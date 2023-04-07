@@ -10,7 +10,6 @@
 #include <fstream>
 #include <Walnut/Timer.h>
 
-#define NDEBUG 1
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
 #else

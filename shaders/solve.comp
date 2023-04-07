@@ -64,7 +64,7 @@ float absComplex(const vec2 z)
     return sqrt(z.x * z.x + z.y * z.y);
 }
 
-vec2 sumOfAproximation(const uint index, const in vec2[5] values)
+vec2 sumOfApproximation(const uint index, const in vec2[5] values)
 {
     vec2 result = vec2(0);
     for(uint j = 0; j < ubo.polynomSize - 1; j++)
@@ -109,7 +109,7 @@ void main()
 
             const vec2 pp = fp(z, Coefficients[indexGroup]);
             const vec2 POverPP = div(p, pp);
-            const vec2 sum = sumOfAproximation(subIndex, CurrentApproximation);
+            const vec2 sum = sumOfApproximation(subIndex, CurrentApproximation);
             const vec2 zPlusOne = z - div(POverPP, vec2(1, 0) - mul(POverPP, sum));
 
             if(switchCase)
