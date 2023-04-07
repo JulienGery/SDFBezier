@@ -10,15 +10,15 @@ layout (binding = 0) uniform ParameterUBO {
 
 layout(std140, binding = 1) readonly buffer CoefficientIn
 {
-    vec2 Coefficients[ ][6];
+    vec2 Coefficients[ ][6]; // buffer storing the coefficients of the polynomial.
 };
 
 layout(std140, binding = 2) buffer ParticleSSBOIn
 {
-    vec2 approximation[][5];
+    volatile vec4 approximation[][5]; // buffer storing the current approximations.
 };
 
-vec2 mul(const vec2 z, const vec2 zp)
+vec2 mul(const vec2 z, const vec2 zp) // complex multiplication
 {
     vec2 result;
     result.x = z.x * zp.x - z.y * zp.y;
@@ -26,7 +26,7 @@ vec2 mul(const vec2 z, const vec2 zp)
     return result;
 }
 
-vec2 div(const vec2 z, const vec2 zp)
+vec2 div(const vec2 z, const vec2 zp) // complex division
 {
     float bottom = zp.x * zp.x + zp.y * zp.y;
     vec2 result = mul(z, vec2(zp.x, -zp.y));
@@ -34,7 +34,7 @@ vec2 div(const vec2 z, const vec2 zp)
     return result / bottom;
 }
 
-vec2 f(const vec2 z, const in vec2[6] coeff)
+vec2 f(const vec2 z, const in vec2[6] coeff) // compute polynom at z
 {
     vec2 tmp = vec2(1, 0);
     vec2 result = coeff[0];
@@ -47,7 +47,7 @@ vec2 f(const vec2 z, const in vec2[6] coeff)
     return result;
 }
 
-vec2 fp(const vec2 z, const in vec2[6] coeff)
+vec2 fp(const vec2 z, const in vec2[6] coeff) // compute derivate at z.
 {
     vec2 tmp = vec2(1, 0);
     vec2 result = coeff[1];
@@ -74,28 +74,57 @@ vec2 sumOfAproximation(const uint index, const in vec2[5] values)
 }
 
 
+vec2[5] getApproximationsCase0(uint indexGroup)
+{
+    vec2[5] result;
+    for(uint i = 0; i < 5; i++)
+        result[i] = approximation[indexGroup][i].xy;
+    return result;
+}
+
+vec2[5] getApproximationsCase1(uint indexGroup)
+{
+    vec2[5] result;
+    for(uint i = 0; i < 5; i++)
+        result[i] = approximation[indexGroup][i].zw;
+    return result;
+}
+
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
 void main()
 {
     uint index = gl_GlobalInvocationID.x;
-    uint subIndex = index % (5);
-    uint indexGroup = (index - subIndex) / (5);
 
-    if(index < ubo.maxIndex)
+    if(index < ubo.maxIndex * 5)
     {
+        uint subIndex = index % (5);
+        uint indexGroup = (index - subIndex) / (5);
+        bool switchCase = false;
+
         for(uint i = 0; i < MAXITERATION; i++)
         {
-            const vec2 z = approximation[indexGroup][subIndex];
+            const vec2[5] CurrentApproximation = switchCase? getApproximationsCase1(indexGroup) : getApproximationsCase0(indexGroup);
+            const vec2 z = CurrentApproximation[subIndex];
             const vec2 p = f(z, Coefficients[indexGroup]);
 
             const vec2 pp = fp(z, Coefficients[indexGroup]);
             const vec2 POverPP = div(p, pp);
-            const vec2 sum = sumOfAproximation(subIndex, approximation[indexGroup]);
+            const vec2 sum = sumOfAproximation(subIndex, CurrentApproximation);
             const vec2 zPlusOne = z - div(POverPP, vec2(1, 0) - mul(POverPP, sum));
-            approximation[indexGroup][subIndex] = zPlusOne;
-            if(absComplex(z - zPlusOne) < EPSILON)
+
+            if(switchCase)
+                approximation[indexGroup][subIndex].zw = zPlusOne;
+            else
+                approximation[indexGroup][subIndex].xy = zPlusOne;
+
+            if(absComplex(z - zPlusOne) < EPSILON || absComplex(z) < EPSILON)
+            {
+                approximation[indexGroup][subIndex].xy = zPlusOne;
                 break;
+            }
+
+            switchCase != switchCase;
         }
     }
 }

@@ -6,6 +6,7 @@
 
 #include "glm/vec4.hpp"
 #include "glm/vec2.hpp"
+#include "glm/geometric.hpp"
 
 struct Roots
 {
@@ -19,7 +20,7 @@ struct Roots
     bool operator==(const Roots& a) const
     {
         for (size_t i = 0; i < 5; i++)
-            if (a._roots[i] != _roots[i])
+            if (glm::distance(a._roots[i], _roots[i]) > 1e-05f)
                 return false;
         return true;
     }

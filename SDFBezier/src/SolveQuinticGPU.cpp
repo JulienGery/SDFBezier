@@ -170,7 +170,7 @@ void SolveQuinticGPU::execute()
     }
 
     vkResetCommandBuffer(m_ComputeCommandBuffer, 0);
-    recordComputeCommandBuffer(m_ComputeCommandBuffer, m_ComputePipeline, m_ComputePipelineLayout, m_Width * m_Height / 64 + 1);
+    recordComputeCommandBuffer(m_ComputeCommandBuffer, m_ComputePipeline, m_ComputePipelineLayout, m_Width * m_Height * 5 / 64 + 1);
     {
         Walnut::ScopedTimer timer{"solve"};
         submitCommandBuffer(m_ComputeCommandBuffer);
