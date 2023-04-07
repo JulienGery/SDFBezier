@@ -72,8 +72,9 @@ private:
     VkDevice m_Device;
 
     VkCommandPool m_CommandPool;
-    VkCommandBuffer m_ComputeCommandBuffer;
-
+    std::vector<VkCommandBuffer> m_ComputeCommandBuffers;
+    
+    
     VkQueue m_ComputeQueue;
     VkDescriptorSetLayout m_ComputeDescriptorSetLayout;
 
@@ -118,6 +119,7 @@ private:
     void cleanup();
 
     void recordComputeCommandBuffer(VkCommandBuffer commandBuffer, VkPipeline pipeline, VkPipelineLayout pipelineLayout, const size_t count);
+    void recordComputeCommandBuffers();
     void submitCommandBuffer(VkCommandBuffer commandBuffer);
     void createSyncObjects();
 

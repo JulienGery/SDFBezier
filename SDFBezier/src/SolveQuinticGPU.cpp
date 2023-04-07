@@ -10,6 +10,7 @@
 #include <fstream>
 #include <Walnut/Timer.h>
 
+#define NDEBUG 1
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
 #else
@@ -154,25 +155,19 @@ void SolveQuinticGPU::execute()
     updateUBO();
 
     Walnut::ScopedTimer total{"total"};
-    vkResetCommandBuffer(m_ComputeCommandBuffer, 0);
-    recordComputeCommandBuffer(m_ComputeCommandBuffer, m_BuildCoefPipeline, m_BuildCoefPipelineLayout, m_Width * m_Height / 64 + 1);
     {
         Walnut::ScopedTimer timer{"buildCoef"};
-        submitCommandBuffer(m_ComputeCommandBuffer);
+        submitCommandBuffer(m_ComputeCommandBuffers[0]);
     }
 
-    vkResetCommandBuffer(m_ComputeCommandBuffer, 0);
-    recordComputeCommandBuffer(m_ComputeCommandBuffer, m_ComputePipelineInit, m_ComputePipelineInitLayout, m_Width * m_Height / 64 + 1);
     {
         Walnut::ScopedTimer timer{"init"};
-        submitCommandBuffer(m_ComputeCommandBuffer);
+        submitCommandBuffer(m_ComputeCommandBuffers[1]);
     }
 
-    vkResetCommandBuffer(m_ComputeCommandBuffer, 0);
-    recordComputeCommandBuffer(m_ComputeCommandBuffer, m_ComputePipeline, m_ComputePipelineLayout, m_Width * m_Height * 5 / 64 + 1);
     {
         Walnut::ScopedTimer timer{"solve"};
-        submitCommandBuffer(m_ComputeCommandBuffer);
+        submitCommandBuffer(m_ComputeCommandBuffers[2]);
     }
 
 }
@@ -192,6 +187,7 @@ void SolveQuinticGPU::initVulkan()
     createComputeDescriptorSets();
     createComputeCommandBuffers();
     createSyncObjects();
+    recordComputeCommandBuffers();
 }
 
 void SolveQuinticGPU::createInstance()
@@ -536,9 +532,10 @@ void SolveQuinticGPU::createComputeCommandBuffers()
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = m_CommandPool;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = (uint32_t)1;
+    allocInfo.commandBufferCount = (uint32_t)3;
+    m_ComputeCommandBuffers.resize(3);
 
-    if (vkAllocateCommandBuffers(m_Device, &allocInfo, &m_ComputeCommandBuffer) != VK_SUCCESS) {
+    if (vkAllocateCommandBuffers(m_Device, &allocInfo, m_ComputeCommandBuffers.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate compute command buffers!");
     }
 }
@@ -659,6 +656,8 @@ void SolveQuinticGPU::cleanup()
     }
 }
 
+
+
 void SolveQuinticGPU::recordComputeCommandBuffer(VkCommandBuffer commandBuffer, VkPipeline pipeline, VkPipelineLayout pipelineLayout, const size_t count)
 {
     VkCommandBufferBeginInfo beginInfo{};
@@ -676,6 +675,16 @@ void SolveQuinticGPU::recordComputeCommandBuffer(VkCommandBuffer commandBuffer, 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to record compute command buffer!");
     }
+}
+
+void SolveQuinticGPU::recordComputeCommandBuffers()
+{
+    for (size_t i = 0; i < m_ComputeCommandBuffers.size(); i++)
+        vkResetCommandBuffer(m_ComputeCommandBuffers[i], 0);
+
+    recordComputeCommandBuffer(m_ComputeCommandBuffers[0], m_BuildCoefPipeline, m_BuildCoefPipelineLayout, m_Width * m_Height / 64 + 1);
+    recordComputeCommandBuffer(m_ComputeCommandBuffers[1], m_ComputePipelineInit, m_ComputePipelineInitLayout, m_Width * m_Height / 64 + 1);
+    recordComputeCommandBuffer(m_ComputeCommandBuffers[2], m_ComputePipeline, m_ComputePipelineLayout, m_Width * m_Height * 5 / 64 + 1);
 }
 
 void SolveQuinticGPU::submitCommandBuffer(VkCommandBuffer commandBuffer)

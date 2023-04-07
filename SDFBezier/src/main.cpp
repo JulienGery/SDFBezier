@@ -47,7 +47,6 @@ bool valid(const Roots& roots, const Coeff& coeff)
 int main()
 {
 	SolveQuinticGPU solver{};
-	
 	solver.execute();
 
 	const std::vector<Roots> result = solver.getResult();
@@ -60,5 +59,4 @@ int main()
 			coutRoot(result[i]);
 			std::cin.get();
 		}
-
 }

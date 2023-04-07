@@ -74,7 +74,7 @@ vec2 sumOfAproximation(const uint index, const in vec2[5] values)
 }
 
 
-vec2[5] getApproximationsCase0(uint indexGroup)
+vec2[5] getApproximationsCase0(const uint indexGroup)
 {
     vec2[5] result;
     for(uint i = 0; i < 5; i++)
@@ -82,7 +82,7 @@ vec2[5] getApproximationsCase0(uint indexGroup)
     return result;
 }
 
-vec2[5] getApproximationsCase1(uint indexGroup)
+vec2[5] getApproximationsCase1(const uint indexGroup)
 {
     vec2[5] result;
     for(uint i = 0; i < 5; i++)
