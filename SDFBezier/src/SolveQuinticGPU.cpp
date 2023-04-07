@@ -156,7 +156,6 @@ void SolveQuinticGPU::execute()
     Walnut::ScopedTimer total{"total"};
     vkResetCommandBuffer(m_ComputeCommandBuffer, 0);
     recordComputeCommandBuffer(m_ComputeCommandBuffer, m_BuildCoefPipeline, m_BuildCoefPipelineLayout, m_Width * m_Height / 64 + 1);
-        
     {
         Walnut::ScopedTimer timer{"buildCoef"};
         submitCommandBuffer(m_ComputeCommandBuffer);
@@ -390,7 +389,7 @@ std::vector<Roots> SolveQuinticGPU::getResult()
     createBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
     void* data;
-    vkMapMemory(m_Device, stagingBufferMemory, 0, result.size(), 0, &data);
+    vkMapMemory(m_Device, stagingBufferMemory, 0, BufferSize, 0, &data);
     copyBuffer(m_ApproximationBuffer, stagingBuffer, BufferSize);
     memcpy(result.data(), data, BufferSize);
     vkUnmapMemory(m_Device, stagingBufferMemory);
@@ -411,7 +410,7 @@ std::vector<Coeff> SolveQuinticGPU::getCoeff()
     createBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
     void* data;
-    vkMapMemory(m_Device, stagingBufferMemory, 0, result.size(), 0, &data);
+    vkMapMemory(m_Device, stagingBufferMemory, 0, BufferSize, 0, &data);
     copyBuffer(m_CoefBuffer, stagingBuffer, BufferSize);
     memcpy(result.data(), data, BufferSize);
     vkUnmapMemory(m_Device, stagingBufferMemory);
