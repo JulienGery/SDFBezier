@@ -1,4 +1,5 @@
 #include "SolveQuinticGPU.h"
+#include "Bezier.h"
 
 #include <iostream>
 #include <complex>
@@ -44,11 +45,31 @@ bool valid(const Roots& roots, const Coeff& coeff)
 	return true;
 }
 
+bool PutainNan(const Roots& roots)
+{
+	for (size_t i = 0; i < 5; i++)
+		if (std::isnan(roots._roots[i].x))
+			return true;
+	return false;
+}
+
 int main()
 {
-	SolveQuinticGPU solver{};
-	solver.execute();
+	Bezier bezier{
+		{0.5, 0.5},
+		{0, 1},
+		{1, 1},
+		{20, 20}
+	};
 
+	const auto jsp = bezier.GetVectors();
+
+	SolveQuinticGPU solver{};
+	solver.P_0 = jsp[0];
+	solver.p1 = jsp[1];
+	solver.p2 = jsp[2];
+	solver.p3 = jsp[3];
+	
 	const std::vector<Roots> result = solver.getResult();
 	const std::vector<Coeff> coef = solver.getCoeff();
 
@@ -58,11 +79,24 @@ int main()
 		if (!valid(result[i], coef[i]))
 		{
 			good = false;
-			coutCoeff(coef[i]);
 			coutRoot(result[i]);
+			coutCoeff(coef[i]);
 			std::cin.get();
 		}
 
 	if (good)
 		std::cout << "\033[32mIt's all good!\n\033[0m";
+
+	for (size_t i = 0; i < result.size(); i++)
+		if (PutainNan(result[i]))
+		{
+			std::cout << i << '\n';
+			coutCoeff(coef[i]);
+			coutRoot(result[i]);
+			break;
+		}
+
+	//std::cout << "\n\n";
+	//coutCoeff(coef[368628]);
+	//coutRoot(result[368628]);
 }

@@ -110,20 +110,49 @@ void main()
             const vec2 pp = fp(z, Coefficients[indexGroup]);
             const vec2 POverPP = div(p, pp);
             const vec2 sum = sumOfApproximation(subIndex, CurrentApproximation);
-            const vec2 zPlusOne = z - div(POverPP, vec2(1, 0) - mul(POverPP, sum));
+            vec2 zPlusOne = z - div(POverPP, vec2(1, 0) - mul(POverPP, sum));
 
+            if(isnan(zPlusOne.x))
+                zPlusOne = vec2(cos(subIndex), sin(subIndex));
+            
             if(switchCase)
                 approximation[indexGroup][subIndex].zw = zPlusOne;
             else
                 approximation[indexGroup][subIndex].xy = zPlusOne;
 
-            if(absComplex(z - zPlusOne) < EPSILON || absComplex(z) < EPSILON)
+            if(absComplex(z - zPlusOne) < EPSILON)
             {
                 approximation[indexGroup][subIndex].xy = zPlusOne;
                 break;
             }
+            
 
             switchCase != switchCase;
+
         }
     }
 }
+
+// void main()
+// {
+//     uint index = gl_GlobalInvocationID.x;
+
+//     if(index < ubo.maxIndex)
+//     {
+//         for(uint i = 0; i < MAXITERATION; i++)
+//         {
+//             const vec2[5] CurrentApproximation = approximation[index];
+//             for(uint k = 0; k < 5; k++)
+//             {
+//                 const vec2 z = CurrentApproximation[k];
+//                 const vec2 p = f(z, Coefficients[index]);
+//                 const vec2 pp = fp(z, Coefficients[index]);
+
+//                 const vec2 POverPP = div(p, pp);
+//                 const vec2 sum = sumOfApproximation(k, CurrentApproximation);
+//                 const vec2 zPlusOne = z - div(POverPP, vec2(1, 0) - mul(POverPP, sum));
+//                 approximation[index][k] = zPlusOne;
+//             }
+//         }
+//     }
+// }

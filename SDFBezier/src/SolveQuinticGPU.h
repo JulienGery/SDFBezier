@@ -61,9 +61,11 @@ public:
     std::vector<Roots> getResult();
     std::vector<Coeff> getCoeff();
 
+    glm::vec2 P_0, p1, p2, p3;
+
 
 private:
-    size_t m_Width = 1920, m_Height = 1080;
+    size_t m_Width = 100, m_Height = 100;
     VkInstance m_Instance;
     VkDebugUtilsMessengerEXT m_DebugMessenger;
 

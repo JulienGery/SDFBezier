@@ -4,6 +4,7 @@
 #include "glm/geometric.hpp"
 
 #include <iostream>
+#include <cstring>
 #include <exception>
 #include <array>
 #include <optional>
@@ -153,19 +154,19 @@ void SolveQuinticGPU::execute()
 {
     updateUBO();
 
-    Walnut::ScopedTimer total{"total"};
+    //Walnut::ScopedTimer total{"total"};
     {
-        Walnut::ScopedTimer timer{"buildCoef"};
+        //Walnut::ScopedTimer timer{"buildCoef"};
         submitCommandBuffer(m_ComputeCommandBuffers[0]);
     }
 
     {
-        Walnut::ScopedTimer timer{"init"};
+        //Walnut::ScopedTimer timer{"init"};
         submitCommandBuffer(m_ComputeCommandBuffers[1]);
     }
 
     {
-        Walnut::ScopedTimer timer{"solve"};
+        //Walnut::ScopedTimer timer{"solve"};
         submitCommandBuffer(m_ComputeCommandBuffers[2]);
     }
 
@@ -682,7 +683,7 @@ void SolveQuinticGPU::recordComputeCommandBuffers()
         vkResetCommandBuffer(m_ComputeCommandBuffers[i], 0);
 
     recordComputeCommandBuffer(m_ComputeCommandBuffers[0], m_BuildCoefPipeline, m_BuildCoefPipelineLayout, m_Width * m_Height / 64 + 1);
-    recordComputeCommandBuffer(m_ComputeCommandBuffers[1], m_ComputePipelineInit, m_ComputePipelineInitLayout, m_Width * m_Height / 64 + 1);
+    recordComputeCommandBuffer(m_ComputeCommandBuffers[1], m_ComputePipelineInit, m_ComputePipelineInitLayout, m_Width * m_Height * 5 / 64 + 1);
     recordComputeCommandBuffer(m_ComputeCommandBuffers[2], m_ComputePipeline, m_ComputePipelineLayout, m_Width * m_Height * 5 / 64 + 1);
 }
 
@@ -717,10 +718,10 @@ void SolveQuinticGPU::createSyncObjects()
 void SolveQuinticGPU::updateUBO()
 {
     UniformBufferObject ubo{};
-    ubo.P_0 = { 0.5, 0.5 };
-    ubo.p1 = { 30, 30 };
-    ubo.p2 = { 40, 40 };
-    ubo.p3 = { 50, 50 };
+    ubo.P_0 = P_0;
+    ubo.p1 = p1;
+    ubo.p2 = p2;
+    ubo.p3 = p3;
     ubo.width = m_Width;
     ubo.height = m_Height;
     ubo.maxIndex = m_Width * m_Height;
