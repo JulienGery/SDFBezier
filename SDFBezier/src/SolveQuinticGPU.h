@@ -6,6 +6,7 @@
 
 #include "glm/vec4.hpp"
 #include "glm/vec2.hpp"
+#include "glm/geometric.hpp"
 
 struct Roots
 {
@@ -16,6 +17,13 @@ struct Roots
         return _roots[index];
     }
 
+    bool operator==(const Roots& a) const
+    {
+        for (size_t i = 0; i < 5; i++)
+            if (glm::distance(a._roots[i], _roots[i]) > 1e-05f)
+                return false;
+        return true;
+    }
 };
 
 struct Coeff
@@ -46,13 +54,16 @@ struct Coeff
 class SolveQuinticGPU
 {
 public:
-	SolveQuinticGPU() { initVulkan(); }
-	~SolveQuinticGPU() { cleanup(); }
+    SolveQuinticGPU() { initVulkan(); }
+    ~SolveQuinticGPU() { cleanup(); }
 
     void execute();
+    std::vector<glm::vec4> getResult();
+
+    glm::vec2 P_0, p1, p2, p3;
+    size_t m_Width = 1600, m_Height = 874;
 
 private:
-    size_t m_Width = 540, m_Height = 960;
     VkInstance m_Instance;
     VkDebugUtilsMessengerEXT m_DebugMessenger;
 
@@ -61,7 +72,7 @@ private:
     VkDevice m_Device;
 
     VkCommandPool m_CommandPool;
-    VkCommandBuffer m_ComputeCommandBuffer;
+    std::vector<VkCommandBuffer> m_ComputeCommandBuffers;
 
     VkQueue m_ComputeQueue;
     VkDescriptorSetLayout m_ComputeDescriptorSetLayout;
@@ -70,18 +81,17 @@ private:
     VkPipeline m_ComputePipeline;
     VkPipelineLayout m_BuildCoefPipelineLayout;
     VkPipeline m_BuildCoefPipeline;
-    VkPipelineLayout m_ComputePointsPipelineLayout;
-    VkPipeline m_ComputePointsPipeline;
     VkPipelineLayout m_ComputePipelineInitLayout;
     VkPipeline m_ComputePipelineInit;
+    VkPipelineLayout m_finalLayout;
+    VkPipeline m_final;
 
     VkBuffer m_CoefBuffer;
     VkDeviceMemory m_CoefBufferMemory;
     VkBuffer m_ApproximationBuffer;
     VkDeviceMemory m_ApproximationBufferMemory;
-
-    VkBuffer m_closestPoints;
-    VkDeviceMemory m_closestPointsMemory;
+    VkBuffer m_resultBuffer;
+    VkDeviceMemory m_resultBufferMemory;
 
     VkBuffer m_UniformBuffer;
     VkDeviceMemory m_UniformBufferMemory;
@@ -90,8 +100,7 @@ private:
     VkDescriptorPool m_DescriptorPool;
     VkDescriptorSet m_ComputeDescriptorSet;
 
-
-	void initVulkan();
+    void initVulkan();
 
     void createInstance();
     void setupDebugMessenger();
@@ -112,13 +121,12 @@ private:
     void cleanup();
 
     void recordComputeCommandBuffer(VkCommandBuffer commandBuffer, VkPipeline pipeline, VkPipelineLayout pipelineLayout, const size_t count);
+    void recordComputeCommandBuffers();
     void submitCommandBuffer(VkCommandBuffer commandBuffer);
     void createSyncObjects();
 
     void updateUBO();
     void createComputePipelineHelper(const std::string& path, VkPipeline& pipeline, VkPipelineLayout& pipelineLayout);
-
-    std::vector<glm::vec4> getResult();
 
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);

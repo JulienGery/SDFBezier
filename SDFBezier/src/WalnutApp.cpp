@@ -3,10 +3,8 @@
 #include "Walnut/Random.h"
 #include "Walnut/Timer.h"
 #include "Walnut/Image.h"
-
 #include "glm/vec2.hpp"
-#include "Bezier.h"
-#include "Draw.h"
+
 #include "Glyph.h"
 #include "SolveQuinticGPU.h"
 
@@ -21,9 +19,8 @@ public:
 
 	ExampleLayer()
 	{
-		solver.execute();
-
-		m_ImageData = new uint32_t[16 * 16];
+		
+		m_ImageData = new uint32_t[1600 * 874];
 		m_Image = std::make_shared<Walnut::Image>(16, 16, Walnut::ImageFormat::RGBA, m_ImageData);
 	}
 
@@ -36,22 +33,31 @@ public:
 	{
 		const uint32_t width = m_Image->GetWidth();
 		const uint32_t height = m_Image->GetHeight();
-
+		
 		if (!m_RenderCurve) return;
 
 		for (size_t i = 0; i < width * height; i++)
 			m_ImageData[i] = 0x00000000;
 
 		
-		{
-			//const Walnut::ScopedTimer timer("render glyph " + std::to_string(width) + '*' + std::to_string(height) + " pixels");
-			//renderGlyph(m_glyph, width, height, m_ImageData);
-		}
+		const auto jsp = m_Curve.getVectors();
+		solver.P_0 = jsp[0];
+		solver.p1 = jsp[1];
+		solver.p2 = jsp[2];
+		solver.p3 = jsp[3];
 
-		//for (size_t i = 0; i < (height / 2 * width); i++)
+		solver.execute();
+
+		const std::vector<glm::vec4> result = solver.getResult();
+
+		for (size_t i = 0; i < result.size(); i++)
+			if (result[i].x < m_distance)
+				m_ImageData[i] = 0xff00ff00;
+
+		for (size_t i = 0; i < (height / 2 * width); i++) 
 		{
-			//const uint32_t y = height - i / width;
-			//std::swap(m_ImageData[i], m_ImageData[y * width - width + (i % width)]);
+			const uint32_t y = height - i / width;
+			std::swap(m_ImageData[i], m_ImageData[y * width - width + (i % width)]);
 		}
 	}
 
@@ -77,25 +83,25 @@ public:
 		ImGui::End();
 		ImGui::Begin("parameters");
 
-		//const size_t pointCount = m_Curve.getPointCount();
+		const size_t pointCount = m_Curve.getSize();
 
-		//ImGui::InputFloat("p0x", &m_Curve.m_P_0.x, 0.01f, 1.f, "%.2f");
-		//ImGui::InputFloat("p0y", &m_Curve.m_P_0.y, 0.01f, 1.f, "%.2f");
+		ImGui::InputFloat("p0x", &m_Curve.m_Points[0].x, 0.01f, 1.f, "%.2f");
+		ImGui::InputFloat("p0y", &m_Curve.m_Points[0].y, 0.01f, 1.f, "%.2f");
 
-		//ImGui::InputFloat("p1x", &m_Curve.m_P_1.x, 0.01f, 1.f, "%.2f");
-		//ImGui::InputFloat("p1y", &m_Curve.m_P_1.y, 0.01f, 1.f, "%.2f");
+		ImGui::InputFloat("p1x", &m_Curve.m_Points[1].x, 0.01f, 1.f, "%.2f");
+		ImGui::InputFloat("p1y", &m_Curve.m_Points[1].y, 0.01f, 1.f, "%.2f");
 
-		//if (pointCount >= 3)
-		//{
-		//	ImGui::InputFloat("p2x", &m_Curve.m_P_2.x, 0.01f, 1.f, "%.2f");
-		//	ImGui::InputFloat("p2y", &m_Curve.m_P_2.y, 0.01f, 1.f, "%.2f");
-		//}
+		if (pointCount >= 3)
+		{
+			ImGui::InputFloat("p2x", &m_Curve.m_Points[2].x, 0.01f, 1.f, "%.2f");
+			ImGui::InputFloat("p2y", &m_Curve.m_Points[2].y, 0.01f, 1.f, "%.2f");
+		}
 
-		//if (pointCount == 4)
-		//{
-		//	ImGui::InputFloat("p3x", &m_Curve.m_P_3.x, 0.01f, 1.f, "%.2f");
-		//	ImGui::InputFloat("p3y", &m_Curve.m_P_3.y, 0.01f, 1.f, "%.2f");
-		//}
+		if (pointCount == 4)
+		{
+			ImGui::InputFloat("p3x", &m_Curve.m_Points[3].x, 0.01f, 1.f, "%.2f");
+			ImGui::InputFloat("p3y", &m_Curve.m_Points[3].y, 0.01f, 1.f, "%.2f");
+		}
 
 		ImGui::InputInt("Index", (int*)&m_Index, 1, 100);
 
@@ -104,6 +110,7 @@ public:
 
 		ImGui::InputInt("render curve", &m_RenderCurve, 0, 1);
 
+		ImGui::InputFloat("distance", &m_distance, 0.01f, 1.f, "%.2f");
 
 		ImGui::End();
 
@@ -115,16 +122,17 @@ private:
 	uint32_t* m_ImageData = nullptr;
 	int m_RenderCurve = 0;
 
+	float m_distance = 0.1;
+
 	size_t m_Index = 0;
 
 	glm::vec2 m_Point{ 175. / 1600., 403. / 874. };
 
-	Glyph m_glyph{ "..\\polices\\times.ttf", 'I' };
+	//Glyph m_glyph{ "..\\polices\\times.ttf", 'I' };
 
 	SolveQuinticGPU solver;
 
-
-	//Bezier m_Curve{ {{0.5, 0.5}, {0., 1.0}, {1., 1.}, {.5, .5 }}, 1000 };
+	Bezier m_Curve{ {{0.5, 0.5}, {0, 1}, {1, 1}, {0.5, 0.5 }} };
 
 };
 

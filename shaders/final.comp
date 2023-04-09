@@ -12,7 +12,7 @@ layout(std140, binding = 2) readonly buffer ParticleSSBOIn
 
 layout(std140, binding = 3) buffer currentClosesetPoints
 {
-    vec4 closestPoints[];
+    vec4 result[];
     //layout: distance, inside, root, curveIndex
 };
 
@@ -46,6 +46,7 @@ void main()
         const float x = index % ubo.width;
         const float y = (index - x) / ubo.width;
         const vec2 point = vec2(x / ubo.width, y / ubo.height);
+        // const vec2 point = ubo.testPoint;
 
         for(uint i = 0; i < 5; i++)
         {
@@ -58,10 +59,10 @@ void main()
                 const float dis = distance(Candidate, point);
                 const bool inside = right(DBezier(real), point);
 
-                if(dis < closestPoints[index].x)
-                    closestPoints[index] = vec4(dis, inside, real, ubo.curveIndex);
-                else if (inside && !bool(closestPoints[index].y) && dis == closestPoints[index].x)
-                    closestPoints[index] = vec4(dis, inside, real, ubo.curveIndex);
+                if(dis < result[index].x)
+                    result[index] = vec4(dis, inside, real, ubo.curveIndex);
+                // else if (inside && !bool(result[index].y) && dis == result[index].x)
+                    // result[index] = vec4(dis, inside, real, ubo.curveIndex);
             }
         }
     }

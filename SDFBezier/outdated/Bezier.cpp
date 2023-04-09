@@ -352,3 +352,15 @@ void Bezier::computeBarycentre()
 
 	m_Barycentre /= m_PointCount;
 }
+
+std::vector<glm::vec2> Bezier::getPoints() const
+{
+	std::vector<glm::vec2> result(4);
+
+	result[0] = m_P_0;
+	result[1] = m_P_1 - m_P_0;
+	result[2] =	m_P_2 - 2.f * m_P_1 + m_P_0;
+	result[3] = m_P_3 - 3.f * m_P_2 + 3.f * m_P_1 - m_P_0;
+
+	return result;
+}

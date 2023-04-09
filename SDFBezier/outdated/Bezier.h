@@ -43,6 +43,7 @@ public:
 	const glm::vec2 getBarycentre() const { return m_Barycentre; }
 
 	void computeBarycentre();
+	std::vector<glm::vec2> getPoints() const;
 
 	glm::vec2 findClosestPointBoundingBox(const glm::vec2& point) const;
 
