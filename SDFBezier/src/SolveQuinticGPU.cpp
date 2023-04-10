@@ -32,7 +32,7 @@ const std::vector<const char*> validationLayers = {
 struct UniformBufferObject
 {
     glm::vec2 P_0, p1, p2, p3;
-    int maxIndex, width, height, polynomSize, curveIndex;
+    int maxIndex, width, height, curveSize, curveIndex;
 };
 
 void coutRoots(const Roots& roots)
@@ -157,22 +157,22 @@ void SolveQuinticGPU::execute()
 
     Walnut::ScopedTimer total{ "total" };
     {
-        Walnut::ScopedTimer timer{ "buildCoef" };
+        //Walnut::ScopedTimer timer{ "buildCoef" };
         submitCommandBuffer(m_ComputeCommandBuffers[0]);
     }
 
     {
-        Walnut::ScopedTimer timer{ "init" };
+        //Walnut::ScopedTimer timer{ "init" };
         submitCommandBuffer(m_ComputeCommandBuffers[1]);
     }
 
     {
-        Walnut::ScopedTimer timer{ "solve" };
+        //Walnut::ScopedTimer timer{ "solve" };
         submitCommandBuffer(m_ComputeCommandBuffers[2]);
     }
 
     {
-        Walnut::ScopedTimer timer{ "compare" };
+        //Walnut::ScopedTimer timer{ "compare" };
         submitCommandBuffer(m_ComputeCommandBuffers[3]);
     }
 
@@ -733,7 +733,7 @@ void SolveQuinticGPU::updateUBO()
     ubo.width = m_Width;
     ubo.height = m_Height;
     ubo.maxIndex = m_Width * m_Height;
-    ubo.polynomSize = 6;
+    ubo.curveSize = m_CurveSize;
     ubo.curveIndex = 0;
 
     memcpy(m_UniformBufferMapped, &ubo, sizeof(ubo));

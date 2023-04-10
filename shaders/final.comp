@@ -2,7 +2,7 @@
 
 layout (binding = 0) uniform ParameterUBO {
     vec2 P_0, p1, p2, p3;
-    int maxIndex, width, height, polynomSize, curveIndex;
+    int maxIndex, width, height, curveSize, curveIndex;
 } ubo;
 
 layout(std140, binding = 2) readonly buffer ParticleSSBOIn
@@ -36,7 +36,80 @@ vec2 DBezier(float t)
 		+ 3.f * t * t * ubo.p3;
 }
 
+float distSquared(const vec2 A, const vec2 B )
+{
+
+    const vec2 C = A - B;
+    return dot( C, C );
+
+}
+
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+void case4(const uint index, const vec2 point)
+{
+    for(uint i = 0; i < 5; i++)
+    {
+        const vec2 root = roots[index][i].xy;
+        if(abs(root.y) < 1e-05)
+        {
+            float real = root.x;
+            real = clamp(real, 0.f, 1.f);
+            const vec2 Candidate = Bezier(real);
+            const float dis = distSquared(Candidate, point);
+            const bool inside = right(DBezier(real), point);
+
+            if(dis < result[index].x)
+                result[index] = vec4(dis, inside, real, ubo.curveIndex);
+            else if (inside && !bool(result[index].y) && dis == result[index].x)
+                result[index] = vec4(dis, inside, real, ubo.curveIndex);
+        }
+    }
+}
+
+void case3(const uint index, const vec2 point)
+{
+    for(uint i = 0; i < 3; i++)
+    {
+        const vec2 root = roots[index][i].xy;
+        if(abs(root.y) < 1e-05)
+        {
+            float real = root.x;
+            real = clamp(real, 0.f, 1.f);
+            const vec2 Candidate = Bezier(real);
+            const float dis = distSquared(Candidate, point);
+            const bool inside = right(DBezier(real), point);
+
+            if(dis < result[index].x)
+                result[index] = vec4(dis, inside, real, ubo.curveIndex);
+            else if (inside && !bool(result[index].y) && dis == result[index].x)
+                result[index] = vec4(dis, inside, real, ubo.curveIndex);
+        }
+    }
+}
+
+void case2(const uint index, const vec2 point)
+{
+    for(uint i = 0; i < 1; i++)
+    {
+        const vec2 root = roots[index][i].xy;
+        if(abs(root.y) < 1e-05)
+        {
+            float real = root.x;
+            real = clamp(real, 0.f, 1.f);
+            const vec2 Candidate = Bezier(real);
+            const float dis = distSquared(Candidate, point);
+            const bool inside = right(DBezier(real), point);
+
+            if(dis < result[index].x)
+                result[index] = vec4(dis, inside, real, ubo.curveIndex);
+            else if (inside && !bool(result[index].y) && dis == result[index].x)
+                result[index] = vec4(dis, inside, real, ubo.curveIndex);
+        }
+    }
+}
+
+
 
 void main()
 {
@@ -46,24 +119,20 @@ void main()
         const float x = index % ubo.width;
         const float y = (index - x) / ubo.width;
         const vec2 point = vec2(x / ubo.width, y / ubo.height);
-        // const vec2 point = ubo.testPoint;
 
-        for(uint i = 0; i < 5; i++)
+        switch (ubo.curveSize)
         {
-            const vec2 root = roots[index][i].xy;
-            if(abs(root.y) < 1e-05)
-            {
-                float real = root.x;
-                real = clamp(real, 0.f, 1.f);
-                const vec2 Candidate = Bezier(real);
-                const float dis = distance(Candidate, point);
-                const bool inside = right(DBezier(real), point);
-
-                if(dis < result[index].x)
-                    result[index] = vec4(dis, inside, real, ubo.curveIndex);
-                // else if (inside && !bool(result[index].y) && dis == result[index].x)
-                    // result[index] = vec4(dis, inside, real, ubo.curveIndex);
-            }
-        }
+            case 4:
+                case4(index, point);
+                break;
+            
+            case 3:
+                case3(index, point);
+                break;
+            
+            case 2:
+                case2(index, point);
+                break;
+        }        
     }
 }

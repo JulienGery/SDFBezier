@@ -21,8 +21,8 @@ struct Bezier
 	{
 		const glm::vec2 P_0 = m_Points[0];
 		const glm::vec2 P_1 = m_Points[1];
-		const glm::vec2 P_2 = m_Points[2];
-		const glm::vec2 P_3 = m_Points[3];
+		const glm::vec2 P_2 = m_Points.size() > 2 ? m_Points[2] : glm::vec2{ 0, 0 };
+		const glm::vec2 P_3 = m_Points.size() > 3 ? m_Points[3] : glm::vec2{ 0, 0 };
 
 		return {
 			P_0,

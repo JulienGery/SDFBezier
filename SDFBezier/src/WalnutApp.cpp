@@ -45,13 +45,17 @@ public:
 		solver.p1 = jsp[1];
 		solver.p2 = jsp[2];
 		solver.p3 = jsp[3];
+		solver.m_Width = width;
+		solver.m_Height = height;
+		solver.m_CurveSize = m_Curve.getSize();
 
+		solver.recordComputeCommandBuffers();
 		solver.execute();
 
 		const std::vector<glm::vec4> result = solver.getResult();
 
 		for (size_t i = 0; i < result.size(); i++)
-			if (result[i].x < m_distance)
+			if (result[i].x < m_distance * m_distance)
 				m_ImageData[i] = 0xff00ff00;
 
 		for (size_t i = 0; i < (height / 2 * width); i++) 
@@ -105,8 +109,8 @@ public:
 
 		ImGui::InputInt("Index", (int*)&m_Index, 1, 100);
 
-		ImGui::InputFloat("px", &m_Point.x, 0.01f, 1.f, "%.2f");
-		ImGui::InputFloat("py", &m_Point.y, 0.01f, 1.f, "%.2f");
+		//ImGui::InputFloat("px", &m_Point.x, 0.01f, 1.f, "%.2f");
+		//ImGui::InputFloat("py", &m_Point.y, 0.01f, 1.f, "%.2f");
 
 		ImGui::InputInt("render curve", &m_RenderCurve, 0, 1);
 
@@ -122,17 +126,16 @@ private:
 	uint32_t* m_ImageData = nullptr;
 	int m_RenderCurve = 0;
 
-	float m_distance = 0.1;
+	float m_distance = 0.01;
 
 	size_t m_Index = 0;
 
-	glm::vec2 m_Point{ 175. / 1600., 403. / 874. };
 
 	//Glyph m_glyph{ "..\\polices\\times.ttf", 'I' };
 
 	SolveQuinticGPU solver;
 
-	Bezier m_Curve{ {{0.5, 0.5}, {0, 1}, {1, 1}, {0.5, 0.5 }} };
+	Bezier m_Curve{ {{0.5, 0.5}, {1, 1}} };
 
 };
 

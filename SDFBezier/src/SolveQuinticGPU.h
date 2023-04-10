@@ -56,12 +56,15 @@ class SolveQuinticGPU
 public:
     SolveQuinticGPU() { initVulkan(); }
     ~SolveQuinticGPU() { cleanup(); }
-
+    
+    void recordComputeCommandBuffers();
     void execute();
+
     std::vector<glm::vec4> getResult();
 
     glm::vec2 P_0, p1, p2, p3;
-    size_t m_Width = 1600, m_Height = 874;
+    size_t m_Width = 1920, m_Height = 1080;
+    size_t m_CurveSize;
 
 private:
     VkInstance m_Instance;
@@ -121,7 +124,6 @@ private:
     void cleanup();
 
     void recordComputeCommandBuffer(VkCommandBuffer commandBuffer, VkPipeline pipeline, VkPipelineLayout pipelineLayout, const size_t count);
-    void recordComputeCommandBuffers();
     void submitCommandBuffer(VkCommandBuffer commandBuffer);
     void createSyncObjects();
 

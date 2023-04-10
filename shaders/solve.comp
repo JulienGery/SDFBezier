@@ -5,7 +5,7 @@
 
 layout (binding = 0) uniform ParameterUBO {
     vec2 P_0, p1, p2, p3;
-    int maxIndex, width, height, polynomSize, curveIndex;
+    int maxIndex, width, height, curveSize, curveIndex;
 } ubo;
 
 layout(std140, binding = 1) readonly buffer CoefficientIn
@@ -38,7 +38,7 @@ vec2 f(const vec2 z, const in vec2[6] coeff) // compute polynom at z
 {
     vec2 tmp = vec2(1, 0);
     vec2 result = coeff[0];
-    for(uint i = 1; i < ubo.polynomSize; i++)
+    for(uint i = 1; i < 6; i++)
     {
         tmp = mul(tmp, z);
         result += mul(coeff[i], tmp);
@@ -51,7 +51,32 @@ vec2 fp(const vec2 z, const in vec2[6] coeff) // compute derivate at z.
 {
     vec2 tmp = vec2(1, 0);
     vec2 result = coeff[1];
-    for(uint i = 2; i < ubo.polynomSize; i++)
+    for(uint i = 2; i < 6; i++)
+    {
+        tmp = mul(tmp, z);
+        result += mul(coeff[i] * float(i), tmp);
+    }
+    return result;
+}
+
+vec2 f(const vec2 z, const in vec2[4] coeff) // compute polynom at z
+{
+    vec2 tmp = vec2(1, 0);
+    vec2 result = coeff[0];
+    for(uint i = 1; i < 4; i++)
+    {
+        tmp = mul(tmp, z);
+        result += mul(coeff[i], tmp);
+
+    }
+    return result;
+}
+
+vec2 fp(const vec2 z, const in vec2[4] coeff) // compute derivate at z.
+{
+    vec2 tmp = vec2(1, 0);
+    vec2 result = coeff[1];
+    for(uint i = 2; i < 4; i++)
     {
         tmp = mul(tmp, z);
         result += mul(coeff[i] * float(i), tmp);
@@ -67,7 +92,17 @@ float absComplex(const vec2 z)
 vec2 sumOfApproximation(const uint index, const in vec2[5] values)
 {
     vec2 result = vec2(0);
-    for(uint j = 0; j < ubo.polynomSize - 1; j++)
+    for(uint j = 0; j < 6 - 1; j++)
+        if (j != index)
+            result += div(vec2(1, 0), values[index] - values[j]) ;
+    return result;
+}
+
+
+vec2 sumOfApproximation(const uint index, const in vec2[3] values)
+{
+    vec2 result = vec2(0);
+    for(uint j = 0; j < 3; j++)
         if (j != index)
             result += div(vec2(1, 0), values[index] - values[j]) ;
     return result;
@@ -90,9 +125,25 @@ vec2[5] getApproximationsCase1(const uint indexGroup)
     return result;
 }
 
+vec2[3] getApproximationsCase0Vec3(const uint indexGroup)
+{
+    vec2[3] result;
+    for(uint i = 0; i < 3; i++)
+        result[i] = approximation[indexGroup][i].xy;
+    return result;
+}
+
+vec2[3] getApproximationsCase1Vec3(const uint indexGroup)
+{
+    vec2[3] result;
+    for(uint i = 0; i < 3; i++)
+        result[i] = approximation[indexGroup][i].zw;
+    return result;
+}
+
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
-void main()
+void case4()
 {
     uint index = gl_GlobalInvocationID.x;
     uint subIndex = index % (5);
@@ -125,11 +176,85 @@ void main()
                 approximation[indexGroup][subIndex].xy = zPlusOne;
                 break;
             }
-            
 
             switchCase != switchCase;
-
         }
+    }
+}
+
+void case3()
+{
+    uint index = gl_GlobalInvocationID.x;
+    uint subIndex = index % (3);
+    uint indexGroup = (index - subIndex) / (3);
+
+    if(indexGroup < ubo.maxIndex)
+    {
+        // TODO rework here
+        bool switchCase = false;
+        vec2[4] BadCoef;
+        for(uint i = 0; i < 4; i++)
+            BadCoef[i] = Coefficients[indexGroup][i];
+
+        for(uint i = 0; i < MAXITERATION; i++)
+        {
+            const vec2[3] CurrentApproximation = switchCase? getApproximationsCase1Vec3(indexGroup) : getApproximationsCase0Vec3(indexGroup);
+            const vec2 z = CurrentApproximation[subIndex];
+            const vec2 p = f(z, BadCoef);
+
+            const vec2 pp = fp(z, BadCoef);
+            const vec2 POverPP = div(p, pp);
+            const vec2 sum = sumOfApproximation(subIndex, CurrentApproximation);
+            vec2 zPlusOne = z - div(POverPP, vec2(1, 0) - mul(POverPP, sum));
+
+            if(isnan(zPlusOne.x))
+                zPlusOne = vec2(cos(subIndex), sin(subIndex));
+            
+            if(switchCase)
+                approximation[indexGroup][subIndex].zw = zPlusOne;
+            else
+                approximation[indexGroup][subIndex].xy = zPlusOne;
+
+            if(absComplex(z - zPlusOne) < EPSILON)
+            {
+                approximation[indexGroup][subIndex].xy = zPlusOne;
+                break;
+            }
+
+            switchCase != switchCase;
+        }
+    }
+}
+
+void case2()
+{
+    uint index = gl_GlobalInvocationID.x;
+
+    if(index < ubo.maxIndex)
+    {
+        const float b = Coefficients[index][0].x;
+        const float a = Coefficients[index][1].x;
+        const float t = -b / a;
+        approximation[index][0].xy = vec2(t, 0);
+    }
+}
+
+void main()
+{
+    switch (ubo.curveSize)
+    {
+        case 4:
+            case4();
+            break;
+            
+        case 3:
+            case3();
+            break;
+
+        case 2:
+            case2();
+            break;
+        
     }
 }
 
