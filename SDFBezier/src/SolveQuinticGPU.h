@@ -57,8 +57,8 @@ public:
     SolveQuinticGPU() { initVulkan(); }
     ~SolveQuinticGPU() { cleanup(); }
     
-    void recordComputeCommandBuffers();
-    void execute();
+    void recordComputeCommandBuffers(const size_t index);
+    void execute(const size_t index);
 
     std::vector<glm::vec4> getResult();
 
@@ -80,15 +80,13 @@ private:
     VkQueue m_ComputeQueue;
     VkDescriptorSetLayout m_ComputeDescriptorSetLayout;
 
-    VkPipelineLayout m_ComputePipelineLayout;
-    VkPipeline m_ComputePipeline;
-    VkPipelineLayout m_BuildCoefPipelineLayout;
-    VkPipeline m_BuildCoefPipeline;
-    VkPipelineLayout m_ComputePipelineInitLayout;
-    VkPipeline m_ComputePipelineInit;
-    VkPipelineLayout m_finalLayout;
-    VkPipeline m_final;
+    std::vector<VkPipeline> m_Pipelines;
+    std::vector<VkPipelineLayout> m_PipelinesLayouts;
 
+    // 0 1 2
+    // 3 4 5 6
+    // 7 8 9 10
+    
     VkBuffer m_CoefBuffer;
     VkDeviceMemory m_CoefBufferMemory;
     VkBuffer m_ApproximationBuffer;

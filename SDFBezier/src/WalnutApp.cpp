@@ -48,8 +48,10 @@ public:
 		solver.m_Width = width;
 		solver.m_Height = height;
 
-		solver.recordComputeCommandBuffers();
-		solver.execute();
+		const size_t index = m_Curve.getSize();
+
+		solver.recordComputeCommandBuffers(index);
+		solver.execute(index);
 
 		const std::vector<glm::vec4> result = solver.getResult();
 

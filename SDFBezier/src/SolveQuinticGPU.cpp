@@ -10,6 +10,7 @@
 #include <optional>
 #include <fstream>
 #include <Walnut/Timer.h>
+#include <string>
 
 //#define NDEBUG 1
 #ifdef NDEBUG
@@ -151,7 +152,7 @@ bool checkValidationLayerSupport() {
     return true;
 }
 
-void SolveQuinticGPU::execute()
+void SolveQuinticGPU::execute(const size_t index)
 {
     updateUBO();
 
@@ -163,7 +164,7 @@ void SolveQuinticGPU::execute()
 
     {
         //Walnut::ScopedTimer timer{ "init" };
-        //submitCommandBuffer(m_ComputeCommandBuffers[1]);
+        submitCommandBuffer(m_ComputeCommandBuffers[1]);
     }
 
     {
@@ -173,7 +174,8 @@ void SolveQuinticGPU::execute()
 
     {
         //Walnut::ScopedTimer timer{ "compare" };
-        submitCommandBuffer(m_ComputeCommandBuffers[3]);
+        if(index != 2)
+            submitCommandBuffer(m_ComputeCommandBuffers[3]);
     }
 
 }
@@ -193,7 +195,6 @@ void SolveQuinticGPU::initVulkan()
     createComputeDescriptorSets();
     createComputeCommandBuffers();
     createSyncObjects();
-    recordComputeCommandBuffers();
 }
 
 void SolveQuinticGPU::createInstance()
@@ -381,11 +382,29 @@ void SolveQuinticGPU::createComputePipelineHelper(const std::string& path, VkPip
 }
 
 void SolveQuinticGPU::createComputePipeline()
-{
-    createComputePipelineHelper("../shaders/buildCoef.spv", m_BuildCoefPipeline, m_BuildCoefPipelineLayout);
-    //createComputePipelineHelper("../shaders/init.spv", m_ComputePipelineInit, m_ComputePipelineInitLayout);
-    createComputePipelineHelper("../shaders/solve.spv", m_ComputePipeline, m_ComputePipelineLayout);
-    createComputePipelineHelper("../shaders/final.spv", m_final, m_finalLayout);
+{   
+    const std::vector<std::string> shaders = 
+    {
+        "../shaders/out/buildCoef2.spv",
+        "../shaders/out/solve2.spv",
+        "../shaders/out/final2.spv",
+
+        "../shaders/out/buildCoef3.spv",
+        "../shaders/out/init3.spv",
+        "../shaders/out/solve3.spv",
+        "../shaders/out/final3.spv",
+
+        "../shaders/out/buildCoef4.spv",
+        "../shaders/out/init4.spv",
+        "../shaders/out/solve4.spv",
+        "../shaders/out/final4.spv"
+    };
+
+    m_Pipelines.resize(shaders.size());
+    m_PipelinesLayouts.resize(shaders.size());
+
+    for (size_t i = 0; i < shaders.size(); i++)
+        createComputePipelineHelper(shaders[i], m_Pipelines[i], m_PipelinesLayouts[i]);
 }
 
 std::vector<glm::vec4> SolveQuinticGPU::getResult()
@@ -633,15 +652,13 @@ void SolveQuinticGPU::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDevic
 
 void SolveQuinticGPU::cleanup()
 {
-    vkDestroyPipeline(m_Device, m_ComputePipeline, nullptr);
-    vkDestroyPipelineLayout(m_Device, m_ComputePipelineLayout, nullptr);
-    vkDestroyPipeline(m_Device, m_BuildCoefPipeline, nullptr);
-    vkDestroyPipelineLayout(m_Device, m_BuildCoefPipelineLayout, nullptr);
-    vkDestroyPipeline(m_Device, m_ComputePipelineInit, nullptr);
-    vkDestroyPipelineLayout(m_Device, m_ComputePipelineInitLayout, nullptr);
-    vkDestroyPipeline(m_Device, m_final, nullptr);
-    vkDestroyPipelineLayout(m_Device, m_finalLayout, nullptr);
+    for (size_t i = 0; i < m_Pipelines.size(); i++)
+    {
+        vkDestroyPipeline(m_Device, m_Pipelines[i], nullptr);
+        vkDestroyPipelineLayout(m_Device, m_PipelinesLayouts[i], nullptr);
 
+    }
+    
     vkDestroyBuffer(m_Device, m_UniformBuffer, nullptr);
     vkFreeMemory(m_Device, m_UniformBufferMemory, nullptr);
     vkDestroyBuffer(m_Device, m_ApproximationBuffer, nullptr);
@@ -685,15 +702,34 @@ void SolveQuinticGPU::recordComputeCommandBuffer(VkCommandBuffer commandBuffer, 
     }
 }
 
-void SolveQuinticGPU::recordComputeCommandBuffers()
+void SolveQuinticGPU::recordComputeCommandBuffers(const size_t curveSize)
 {
     for (size_t i = 0; i < m_ComputeCommandBuffers.size(); i++)
         vkResetCommandBuffer(m_ComputeCommandBuffers[i], 0);
 
-    recordComputeCommandBuffer(m_ComputeCommandBuffers[0], m_BuildCoefPipeline, m_BuildCoefPipelineLayout, m_Width * m_Height / 64 + 1);
-    //recordComputeCommandBuffer(m_ComputeCommandBuffers[1], m_ComputePipelineInit, m_ComputePipelineInitLayout, m_Width * m_Height * 5 / 64 + 1);
-    recordComputeCommandBuffer(m_ComputeCommandBuffers[2], m_ComputePipeline, m_ComputePipelineLayout, m_Width * m_Height / 64 + 1);
-    recordComputeCommandBuffer(m_ComputeCommandBuffers[3], m_final, m_finalLayout, m_Width * m_Height / 64 + 1);
+    switch (curveSize)
+    {
+        case 2:
+            recordComputeCommandBuffer(m_ComputeCommandBuffers[0], m_Pipelines[0], m_PipelinesLayouts[0], m_Width * m_Height / 64 + 1);
+            recordComputeCommandBuffer(m_ComputeCommandBuffers[1], m_Pipelines[1], m_PipelinesLayouts[1], m_Width * m_Height / 64 + 1);
+            recordComputeCommandBuffer(m_ComputeCommandBuffers[2], m_Pipelines[2], m_PipelinesLayouts[2], m_Width * m_Height / 64 + 1);
+            break;
+
+        case 3:
+            recordComputeCommandBuffer(m_ComputeCommandBuffers[0], m_Pipelines[3], m_PipelinesLayouts[3], m_Width * m_Height / 64 + 1);
+            recordComputeCommandBuffer(m_ComputeCommandBuffers[1], m_Pipelines[4], m_PipelinesLayouts[4], m_Width * m_Height * 5 / 64 + 1);
+            recordComputeCommandBuffer(m_ComputeCommandBuffers[2], m_Pipelines[5], m_PipelinesLayouts[5], m_Width * m_Height / 64 + 1);
+            recordComputeCommandBuffer(m_ComputeCommandBuffers[3], m_Pipelines[6], m_PipelinesLayouts[6], m_Width * m_Height / 64 + 1);
+            break;
+
+        case 4:
+            recordComputeCommandBuffer(m_ComputeCommandBuffers[0], m_Pipelines[7], m_PipelinesLayouts[7], m_Width * m_Height / 64 + 1);
+            recordComputeCommandBuffer(m_ComputeCommandBuffers[1], m_Pipelines[8], m_PipelinesLayouts[8], m_Width * m_Height * 5 / 64 + 1);
+            recordComputeCommandBuffer(m_ComputeCommandBuffers[2], m_Pipelines[9], m_PipelinesLayouts[9], m_Width * m_Height / 64 + 1);
+            recordComputeCommandBuffer(m_ComputeCommandBuffers[3], m_Pipelines[10], m_PipelinesLayouts[10], m_Width * m_Height / 64 + 1);
+            break;
+    }
+
 }
 
 void SolveQuinticGPU::submitCommandBuffer(VkCommandBuffer commandBuffer)
