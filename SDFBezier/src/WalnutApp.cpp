@@ -47,7 +47,6 @@ public:
 		solver.p3 = jsp[3];
 		solver.m_Width = width;
 		solver.m_Height = height;
-		solver.m_CurveSize = m_Curve.getSize();
 
 		solver.recordComputeCommandBuffers();
 		solver.execute();
@@ -83,7 +82,7 @@ public:
 		m_Image->SetData(m_ImageData);
 
 		ImGui::Image(m_Image->GetDescriptorSet(), ImVec2((float)windowWidth, (float)windowHeight));
-
+		
 		ImGui::End();
 		ImGui::Begin("parameters");
 
@@ -130,12 +129,11 @@ private:
 
 	size_t m_Index = 0;
 
-
 	//Glyph m_glyph{ "..\\polices\\times.ttf", 'I' };
 
 	SolveQuinticGPU solver;
 
-	Bezier m_Curve{ {{0.5, 0.5}, {1, 1}} };
+	Bezier m_Curve{ {{0, 0}, {1, 1}} };
 
 };
 

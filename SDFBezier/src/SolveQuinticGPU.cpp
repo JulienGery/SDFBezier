@@ -11,7 +11,7 @@
 #include <fstream>
 #include <Walnut/Timer.h>
 
-//#define NDEBUG 1 
+//#define NDEBUG 1
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
 #else
@@ -32,7 +32,7 @@ const std::vector<const char*> validationLayers = {
 struct UniformBufferObject
 {
     glm::vec2 P_0, p1, p2, p3;
-    int maxIndex, width, height, curveSize, curveIndex;
+    int maxIndex, width, height, curveIndex;
 };
 
 void coutRoots(const Roots& roots)
@@ -163,7 +163,7 @@ void SolveQuinticGPU::execute()
 
     {
         //Walnut::ScopedTimer timer{ "init" };
-        submitCommandBuffer(m_ComputeCommandBuffers[1]);
+        //submitCommandBuffer(m_ComputeCommandBuffers[1]);
     }
 
     {
@@ -383,7 +383,7 @@ void SolveQuinticGPU::createComputePipelineHelper(const std::string& path, VkPip
 void SolveQuinticGPU::createComputePipeline()
 {
     createComputePipelineHelper("../shaders/buildCoef.spv", m_BuildCoefPipeline, m_BuildCoefPipelineLayout);
-    createComputePipelineHelper("../shaders/init.spv", m_ComputePipelineInit, m_ComputePipelineInitLayout);
+    //createComputePipelineHelper("../shaders/init.spv", m_ComputePipelineInit, m_ComputePipelineInitLayout);
     createComputePipelineHelper("../shaders/solve.spv", m_ComputePipeline, m_ComputePipelineLayout);
     createComputePipelineHelper("../shaders/final.spv", m_final, m_finalLayout);
 }
@@ -689,9 +689,10 @@ void SolveQuinticGPU::recordComputeCommandBuffers()
 {
     for (size_t i = 0; i < m_ComputeCommandBuffers.size(); i++)
         vkResetCommandBuffer(m_ComputeCommandBuffers[i], 0);
+
     recordComputeCommandBuffer(m_ComputeCommandBuffers[0], m_BuildCoefPipeline, m_BuildCoefPipelineLayout, m_Width * m_Height / 64 + 1);
-    recordComputeCommandBuffer(m_ComputeCommandBuffers[1], m_ComputePipelineInit, m_ComputePipelineInitLayout, m_Width * m_Height * 5 / 64 + 1);
-    recordComputeCommandBuffer(m_ComputeCommandBuffers[2], m_ComputePipeline, m_ComputePipelineLayout, m_Width * m_Height * 5 / 64 + 1);
+    //recordComputeCommandBuffer(m_ComputeCommandBuffers[1], m_ComputePipelineInit, m_ComputePipelineInitLayout, m_Width * m_Height * 5 / 64 + 1);
+    recordComputeCommandBuffer(m_ComputeCommandBuffers[2], m_ComputePipeline, m_ComputePipelineLayout, m_Width * m_Height / 64 + 1);
     recordComputeCommandBuffer(m_ComputeCommandBuffers[3], m_final, m_finalLayout, m_Width * m_Height / 64 + 1);
 }
 
@@ -733,7 +734,6 @@ void SolveQuinticGPU::updateUBO()
     ubo.width = m_Width;
     ubo.height = m_Height;
     ubo.maxIndex = m_Width * m_Height;
-    ubo.curveSize = m_CurveSize;
     ubo.curveIndex = 0;
 
     memcpy(m_UniformBufferMapped, &ubo, sizeof(ubo));

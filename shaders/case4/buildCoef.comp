@@ -1,0 +1,48 @@
+#version 450
+
+layout (binding = 0) uniform ParameterUBO {
+    vec2 P_0, p1, p2, p3;
+    int maxIndex, width, height, curveIndex;
+} ubo;
+
+layout(std140, binding = 1) writeonly buffer CoefficientIn
+{
+    vec4 Coefficients[ ][6];
+};
+
+layout(std140, binding = 3) writeonly buffer ClosestPoints
+{
+    vec4 points[];
+};
+
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+    const uint index = gl_GlobalInvocationID.x;
+    if(index < ubo.maxIndex)
+    {
+        if(ubo.curveIndex == 0)
+            points[index] = vec4(3.402823466E+38, 0, 0, 0);
+
+        const float x = index % ubo.width;
+        const float y = (index - x) / float(ubo.width);
+
+        const vec2 point = vec2(x / float(ubo.width), y / float(ubo.height));
+        const vec2 p = point - ubo.P_0;
+
+        const float a = dot(ubo.p3, ubo.p3);
+        const float b = 5.f * dot(ubo.p2, ubo.p3);
+        const float c = 4.f * dot(ubo.p1, ubo.p3) + 6.f * dot(ubo.p2, ubo.p2);
+        const float d = 9.f * dot(ubo.p1, ubo.p2) - dot(ubo.p3, p);
+        const float e = 3.f * dot(ubo.p1, ubo.p1) - 2.f * dot(ubo.p2, p);
+        const float f = -dot(ubo.p1, p);
+
+        Coefficients[index][0] = vec4(f, 0, 0, 0);
+        Coefficients[index][1] = vec4(e, 0, 0, 0);
+        Coefficients[index][2] = vec4(d, 0, 0, 0);
+        Coefficients[index][3] = vec4(c, 0, 0, 0);
+        Coefficients[index][4] = vec4(b, 0, 0, 0);
+        Coefficients[index][5] = vec4(a, 0, 0, 0);
+    }
+}

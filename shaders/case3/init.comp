@@ -1,0 +1,77 @@
+#version 450
+
+#define PI 3.14159265358979323846264338327950288419716939937510
+
+layout (binding = 0) uniform ParameterUBO {
+    vec2 P_0, p1, p2, p3;
+    int maxIndex, width, height, curveIndex;
+} ubo;
+
+layout(std140, binding = 1) readonly buffer CoefficientIn
+{
+    vec2 Coefficients[ ][4];
+};
+
+layout(std140, binding = 2) writeonly buffer ParticleSSBOOut {
+   vec2 startinPoint[ ][3];
+};
+
+vec2 mul(const vec2 z, const vec2 zp)
+{
+    vec2 result;
+    result.x = z.x * zp.x - z.y * zp.y;
+    result.y = z.y * zp.x + z.x * zp.y;
+    return result;
+}
+
+vec2 div(const vec2 z, const vec2 zp)
+{
+    float bottom = zp.x * zp.x + zp.y * zp.y;
+    vec2 result = mul(z, vec2(zp.x, -zp.y));
+
+    return result / bottom;
+}
+
+float absComplex(const vec2 z)
+{
+    return sqrt(z.x * z.x + z.y * z.y);
+}
+
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+    uint index = gl_GlobalInvocationID.x;
+    uint subIndex = index % 3;
+    uint IndexGroup = (index - subIndex) / 3;
+
+    if(IndexGroup < ubo.maxIndex)
+    {
+        vec2 a_3 = Coefficients[IndexGroup][3];
+        vec2 a_0 = Coefficients[IndexGroup][0];
+
+        float offset = PI / (2.0*3.0);
+        float angle = 2.0*PI/3.0;
+
+        bool radiusZero = false;
+        float radius;
+        
+        if(a_0.x == 0 && a_0.y == 0)
+        {
+            radius = pow(absComplex(div(Coefficients[IndexGroup][1], a_3)), 1./2.);
+            angle = 2.0*PI/2.0;
+            offset = PI/(2.0 * 2.0);
+            radiusZero = true;
+        }
+        else 
+            radius = pow(absComplex(div(a_0, a_3)), 1./3.);
+
+        const vec2 start = radius * vec2(
+            cos(subIndex * angle + offset), sin(subIndex * angle + offset));
+
+        startinPoint[IndexGroup][subIndex] = start;
+
+        if(radiusZero)
+            startinPoint[IndexGroup][0] = vec2(0);
+    } 
+}
