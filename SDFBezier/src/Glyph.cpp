@@ -47,7 +47,7 @@ OutLines Glyph::readTTF()
     if (error)
         throw std::runtime_error("failed to read file");
 
-    error = FT_Set_Char_Size(face, 0, 1, 0, 0);
+    error = FT_Set_Char_Size(face, 0, 1, 1600, 874);
     if (error)
         throw std::runtime_error("failed to set char size");
 
@@ -67,8 +67,8 @@ OutLines Glyph::readTTF()
     for (size_t i = 0; i < faceOutline.n_points; i++)
     {
         outLines.flags[i] = faceOutline.tags[i];
-        outLines.points[2 * i] = (float)faceOutline.points[i].x / 64.0;
-        outLines.points[2 * i + 1] = (float)faceOutline.points[i].y / 64.0;
+        outLines.points[2 * i] = (float)faceOutline.points[i].x;
+        outLines.points[2 * i + 1] = (float)faceOutline.points[i].y;
     }
 
     outLines.contour.resize(faceOutline.n_contours);
@@ -121,8 +121,4 @@ void Glyph::BuildCurves(const OutLines& outLines)
         start = end + 1;
     }
 
-    for (const auto& i : m_Curves)
-        std::cout << i.size() << ' ';
-    std::cout << '\n';
-    
 }

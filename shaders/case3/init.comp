@@ -39,16 +39,51 @@ float absComplex(const vec2 z)
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
+// void main()
+// {
+//     uint index = gl_GlobalInvocationID.x;
+//     uint subIndex = index % 3;
+//     uint IndexGroup = (index - subIndex) / 3;
+
+//     if(IndexGroup < ubo.maxIndex)
+//     {
+//         vec2 a_3 = Coefficients[IndexGroup][3];
+//         vec2 a_0 = Coefficients[IndexGroup][0];
+
+//         float offset = PI / (2.0*3.0);
+//         float angle = 2.0*PI/3.0;
+
+//         bool radiusZero = false;
+//         float radius;
+        
+//         if(a_0.x == 0 && a_0.y == 0)
+//         {
+//             radius = pow(absComplex(div(Coefficients[IndexGroup][1], a_3)), 1./2.);
+//             angle = 2.0*PI/2.0;
+//             offset = PI/(2.0 * 2.0);
+//             radiusZero = true;
+//         }
+//         else 
+//             radius = pow(absComplex(div(a_0, a_3)), 1./3.);
+
+//         const vec2 start = radius * vec2(
+//             cos(subIndex * angle + offset), sin(subIndex * angle + offset));
+
+//         startinPoint[IndexGroup][subIndex] = start;
+
+//         if(radiusZero)
+//             startinPoint[IndexGroup][0] = vec2(0);
+//     } 
+// }
+
 void main()
 {
     uint index = gl_GlobalInvocationID.x;
-    uint subIndex = index % 3;
-    uint IndexGroup = (index - subIndex) / 3;
 
-    if(IndexGroup < ubo.maxIndex)
+    if(index < ubo.maxIndex)
     {
-        vec2 a_3 = Coefficients[IndexGroup][3];
-        vec2 a_0 = Coefficients[IndexGroup][0];
+        vec2 a_3 = Coefficients[index][3];
+        vec2 a_0 = Coefficients[index][0];
 
         float offset = PI / (2.0*3.0);
         float angle = 2.0*PI/3.0;
@@ -58,7 +93,7 @@ void main()
         
         if(a_0.x == 0 && a_0.y == 0)
         {
-            radius = pow(absComplex(div(Coefficients[IndexGroup][1], a_3)), 1./2.);
+            radius = pow(absComplex(div(Coefficients[index][1], a_3)), 1./2.);
             angle = 2.0*PI/2.0;
             offset = PI/(2.0 * 2.0);
             radiusZero = true;
@@ -66,12 +101,12 @@ void main()
         else 
             radius = pow(absComplex(div(a_0, a_3)), 1./3.);
 
-        const vec2 start = radius * vec2(
-            cos(subIndex * angle + offset), sin(subIndex * angle + offset));
 
-        startinPoint[IndexGroup][subIndex] = start;
+        for(uint i = 0; i < 3; i++)
+            startinPoint[index][i] = radius * vec2(
+                cos(i * angle + offset), sin(i * angle + offset));;
 
         if(radiusZero)
-            startinPoint[IndexGroup][0] = vec2(0);
+            startinPoint[index][0] = vec2(0);
     } 
 }

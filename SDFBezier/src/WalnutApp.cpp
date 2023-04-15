@@ -34,6 +34,8 @@ public:
 		const uint32_t width = m_Image->GetWidth();
 		const uint32_t height = m_Image->GetHeight();
 
+		//std::cout << width << ' ' << height  << '\n';
+
 		if (!m_RenderCurve) return;
 
 		for (size_t i = 0; i < width * height; i++)
@@ -66,8 +68,8 @@ public:
 		{
 			//if (result[i].w == m_Index && result[i].x < m_distance * m_distance)
 				//m_ImageData[i] = 0xff'ff'ff'ff;
-			//else if (result[i].w == m_Index)
-				//m_ImageData[i] = 0xff'00'00'ff;
+			//if (result[i].w == m_Index)
+			//	m_ImageData[i] = 0xff'00'00'ff;
 			//else if (result[i].y && result[i].x < m_distance * m_distance)
 				//m_ImageData[i] = 0xff'ff'ff'00;
 			if (result[i].y)
@@ -150,7 +152,7 @@ private:
 
 	size_t m_Index = 0;
 
-	Glyph m_glyph{ "..\\polices\\times.ttf", 'O' };
+	Glyph m_glyph{ "..\\polices\\times.ttf", 'u' };
 
 	SolveQuinticGPU solver;
 

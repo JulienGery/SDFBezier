@@ -2,6 +2,7 @@
 
 #define EPSILON 1e-05
 #define MAXITERATION 200
+#define PI 3.14159265358979323846264338327950288419716939937510
 
 layout (binding = 0) uniform ParameterUBO {
     vec2 P_0, p1, p2, p3;
@@ -32,6 +33,12 @@ vec2 div(const vec2 z, const vec2 zp) // complex division
     vec2 result = mul(z, vec2(zp.x, -zp.y));
 
     return result / bottom;
+}
+
+vec2 div(const float x, const vec2 zp)
+{
+    float bottom = zp.x * zp.x + zp.y * zp.y;
+    return x * vec2(zp.x, -zp.y) / bottom;
 }
 
 vec2 f(const vec2 z, const in vec2[4] coeff) // compute polynom at z
@@ -78,33 +85,84 @@ layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
 // single threaded and faster
 
+// void main()
+// {
+//     uint index = gl_GlobalInvocationID.x;
+
+//     if(index < ubo.maxIndex)
+//     {
+//         for(uint i = 0; i < MAXITERATION; i++)
+//         {
+//             const vec2[3] CurrentApproximation = approximation[index];
+//             uint finish = 0;
+//             for(uint k = 0; k < 3; k++)
+//             {
+//                 const vec2 z = CurrentApproximation[k];
+//                 const vec2 p = f(z, Coefficients[index]);
+//                 const vec2 pp = fp(z, Coefficients[index]);
+
+//                 const vec2 POverPP = div(p, pp);
+//                 const vec2 sum = sumOfApproximation(k, CurrentApproximation);
+//                 const vec2 zPlusOne = z - div(POverPP, vec2(1, 0) - mul(POverPP, sum));
+//                 approximation[index][k] = zPlusOne;
+
+//                 if(distance(z, zPlusOne) < EPSILON)
+//                     finish++;
+//             }
+
+//             if(finish == 3)
+//                 break;
+//         }
+//     }
+// }
+
+
+vec2 complexSQRT(const float x)
+{
+    if(x < 0)
+        return vec2(0, sqrt(abs(x)));
+    return vec2(sqrt(x), 0);
+}
+
+
+vec2 complexEXP(const float o)
+{
+    return vec2(cos(o), sin(0));
+}
+
 void main()
 {
     uint index = gl_GlobalInvocationID.x;
 
     if(index < ubo.maxIndex)
     {
-        for(uint i = 0; i < MAXITERATION; i++)
+        float a = Coefficients[index][3].x;
+        float b = Coefficients[index][2].x;
+        float c = Coefficients[index][1].x;
+        float d = Coefficients[index][0].x;
+        
+        b /= a;
+        c /= a;
+        d /= a;
+        a = 1;
+
+        const float p = (3.0 * c - b * b) / 3.0;
+        const float q = (9.0 * c * b - 27.0 * d - 2. * b * b * b) / 27.0;
+
+        const float R = q / 2.0;
+	    const float Q = p / 3.0;
+
+        const vec2 w3 = vec2(R, 0) + complexSQRT(R * R + Q * Q * Q);
+
+        const float norm = absComplex(w3);
+        const float r = pow(norm, 1.0/3.0);
+        const float o = atan(w3.y, w3.x);
+
+        for(uint i = 0; i < 3; i++)
         {
-            const vec2[3] CurrentApproximation = approximation[index];
-            uint finish = 0;
-            for(uint k = 0; k < 3; k++)
-            {
-                const vec2 z = CurrentApproximation[k];
-                const vec2 p = f(z, Coefficients[index]);
-                const vec2 pp = fp(z, Coefficients[index]);
-
-                const vec2 POverPP = div(p, pp);
-                const vec2 sum = sumOfApproximation(k, CurrentApproximation);
-                const vec2 zPlusOne = z - div(POverPP, vec2(1, 0) - mul(POverPP, sum));
-                approximation[index][k] = zPlusOne;
-
-                if(distance(z, zPlusOne) < EPSILON)
-                    finish++;
-            }
-
-            if(finish == 3)
-                break;
+            const vec2 w = r * complexEXP((o + 2.0 * i * PI) / 3.0);
+            const vec2 x = w - div(p, 3.0*w);
+            approximation[index][i] = x - vec2(b / 3.0, 0);
         }
     }
 }

@@ -51,7 +51,7 @@ void main()
     {
         const float x = index % ubo.width;
         const float y = (index - x) / ubo.width;
-        const vec2 point = vec2(x / ubo.width, y / ubo.height);
+        const vec2 point = vec2(x, y);
 
         for(uint i = 0; i < 3; i++)
         {

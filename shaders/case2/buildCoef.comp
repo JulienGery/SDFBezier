@@ -28,7 +28,7 @@ void main()
         const float x = index % ubo.width;
         const float y = (index - x) / float(ubo.width);
 
-        const vec2 point = vec2(x / float(ubo.width), y / float(ubo.height));
+        const vec2 point = vec2(x, y);
         const vec2 p = point - ubo.P_0;
 
         const float a = dot(ubo.p1, ubo.p1);

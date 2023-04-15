@@ -164,7 +164,8 @@ void SolveQuinticGPU::execute(const size_t index)
 
     {
         //Walnut::ScopedTimer timer{ "init" };
-        submitCommandBuffer(m_ComputeCommandBuffers[1]);
+        if(index != 3)
+            submitCommandBuffer(m_ComputeCommandBuffers[1]);
     }
 
     {
@@ -710,23 +711,18 @@ void SolveQuinticGPU::recordComputeCommandBuffers(const size_t curveSize)
     switch (curveSize)
     {
         case 2:
-            recordComputeCommandBuffer(m_ComputeCommandBuffers[0], m_Pipelines[0], m_PipelinesLayouts[0], m_Width * m_Height / 64 + 1);
-            recordComputeCommandBuffer(m_ComputeCommandBuffers[1], m_Pipelines[1], m_PipelinesLayouts[1], m_Width * m_Height / 64 + 1);
-            recordComputeCommandBuffer(m_ComputeCommandBuffers[2], m_Pipelines[2], m_PipelinesLayouts[2], m_Width * m_Height / 64 + 1);
+            for (size_t i = 0; i < 3; i++)
+                recordComputeCommandBuffer(m_ComputeCommandBuffers[i], m_Pipelines[i], m_PipelinesLayouts[i], m_Width * m_Height / 64 + 1);
             break;
 
         case 3:
-            recordComputeCommandBuffer(m_ComputeCommandBuffers[0], m_Pipelines[3], m_PipelinesLayouts[3], m_Width * m_Height / 64 + 1);
-            recordComputeCommandBuffer(m_ComputeCommandBuffers[1], m_Pipelines[4], m_PipelinesLayouts[4], m_Width * m_Height * 5 / 64 + 1);
-            recordComputeCommandBuffer(m_ComputeCommandBuffers[2], m_Pipelines[5], m_PipelinesLayouts[5], m_Width * m_Height / 64 + 1);
-            recordComputeCommandBuffer(m_ComputeCommandBuffers[3], m_Pipelines[6], m_PipelinesLayouts[6], m_Width * m_Height / 64 + 1);
+            for (size_t i = 0; i < 4; i++)
+                recordComputeCommandBuffer(m_ComputeCommandBuffers[i], m_Pipelines[i + 3], m_PipelinesLayouts[i + 3], m_Width * m_Height / 64 + 1);
             break;
 
         case 4:
-            recordComputeCommandBuffer(m_ComputeCommandBuffers[0], m_Pipelines[7], m_PipelinesLayouts[7], m_Width * m_Height / 64 + 1);
-            recordComputeCommandBuffer(m_ComputeCommandBuffers[1], m_Pipelines[8], m_PipelinesLayouts[8], m_Width * m_Height * 5 / 64 + 1);
-            recordComputeCommandBuffer(m_ComputeCommandBuffers[2], m_Pipelines[9], m_PipelinesLayouts[9], m_Width * m_Height / 64 + 1);
-            recordComputeCommandBuffer(m_ComputeCommandBuffers[3], m_Pipelines[10], m_PipelinesLayouts[10], m_Width * m_Height / 64 + 1);
+            for (size_t i = 0; i < 4; i++)
+                recordComputeCommandBuffer(m_ComputeCommandBuffers[i], m_Pipelines[i + 7], m_PipelinesLayouts[i + 7], m_Width * m_Height / 64 + 1);
             break;
     }
 

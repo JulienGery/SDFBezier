@@ -49,7 +49,7 @@ void main()
     {
         const float x = index % ubo.width;
         const float y = (index - x) / ubo.width;
-        const vec2 point = vec2(x / ubo.width, y / ubo.height);
+        const vec2 point = vec2(x, y);
 
         float real = roots[index].x;
         real = clamp(real, 0.f, 1.f);
