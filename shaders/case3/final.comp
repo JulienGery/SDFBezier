@@ -1,5 +1,7 @@
 #version 450
 
+#define EPSILON 1e-5
+
 layout (binding = 0) uniform ParameterUBO {
     vec2 P_0, p1, p2, p3;
     int maxIndex, width, height, curveIndex;
@@ -56,11 +58,11 @@ void main()
             const vec2 root = roots[index][i].xy;
             if(abs(root.y) < 1e-05)
             {
-                float real = root.x;
+                float real = root.x;    
                 real = clamp(real, 0.f, 1.f);
                 const vec2 Candidate = Bezier(real);
                 const float dis = distSquared(Candidate, point);
-                const bool inside = right(DBezier(real), point);
+                const bool inside = right(DBezier(real), point - Candidate);
 
                 if(dis < result[index].x)
                     result[index] = vec4(dis, inside, real, ubo.curveIndex);

@@ -156,7 +156,7 @@ void SolveQuinticGPU::execute(const size_t index)
 {
     updateUBO();
 
-    Walnut::ScopedTimer total{ "total" };
+    //Walnut::ScopedTimer total{ "total" };
     {
         //Walnut::ScopedTimer timer{ "buildCoef" };
         submitCommandBuffer(m_ComputeCommandBuffers[0]);
@@ -770,7 +770,7 @@ void SolveQuinticGPU::updateUBO()
     ubo.width = m_Width;
     ubo.height = m_Height;
     ubo.maxIndex = m_Width * m_Height;
-    ubo.curveIndex = 0;
+    ubo.curveIndex = m_CurveIndex;
 
     memcpy(m_UniformBufferMapped, &ubo, sizeof(ubo));
 }

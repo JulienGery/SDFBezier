@@ -64,7 +64,7 @@ public:
 
     glm::vec2 P_0, p1, p2, p3;
     size_t m_Width = 1920, m_Height = 1080;
-    size_t m_CurveSize;
+    size_t m_CurveIndex;
 
 private:
     VkInstance m_Instance;
@@ -83,10 +83,6 @@ private:
     std::vector<VkPipeline> m_Pipelines;
     std::vector<VkPipelineLayout> m_PipelinesLayouts;
 
-    // 0 1 2
-    // 3 4 5 6
-    // 7 8 9 10
-    
     VkBuffer m_CoefBuffer;
     VkDeviceMemory m_CoefBufferMemory;
     VkBuffer m_ApproximationBuffer;

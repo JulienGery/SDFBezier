@@ -40,7 +40,7 @@ struct Bezier
 			throw std::runtime_error("failed to add point to bezier");
 	}
 
-	size_t getSize() const { return m_Points.size(); }
+	size_t size() const { return m_Points.size(); }
 	
 };
 

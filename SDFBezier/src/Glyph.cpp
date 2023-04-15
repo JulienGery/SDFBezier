@@ -78,16 +78,17 @@ OutLines Glyph::readTTF()
     return outLines;
 }
 
-void Glyph::BuildCurves(const OutLines& OutLines)
+void Glyph::BuildCurves(const OutLines& outLines)
 {
-    const size_t pointsCount = OutLines.flags.size();
+    const size_t pointsCount = outLines.flags.size();
     
     uint16_t start = 0;
-    for (const auto& end : OutLines.contour)
+    for (const auto& end : outLines.contour)
     {
-        Bezier bezier{ {{OutLines.points[2 * start], OutLines.points[2 * start + 1]}} };
+        Bezier bezier{ {{outLines.points[2 * start], outLines.points[2 * start + 1]}} };
         size_t i = start;
         bool Sbreak = true;
+        glm::vec2 previusPoint{};
         while (Sbreak)
         {
             i++;
@@ -97,16 +98,31 @@ void Glyph::BuildCurves(const OutLines& OutLines)
                 Sbreak = false;
             }
             
-            bezier.addPoint({ OutLines.points[2 * i], OutLines.points[2 * i + 1] });
-
-            if (OutLines.flags[i] & FT_CURVE_TAG_ON && bezier.getSize() > 1)
+            const glm::vec2 point{ outLines.points[2 * i], outLines.points[2 * i + 1] };
+            if (!(outLines.flags[i] & FT_CURVE_TAG_ON) && bezier.size() == 2)
             {
+                const glm::vec2 middle = (previusPoint + point) / 2.f;
+                bezier.addPoint(middle);
                 m_Curves.push_back(bezier);
-                bezier = Bezier{ {{ OutLines.points[2 * i], OutLines.points[2 * i + 1] }} };
+                bezier = Bezier{ {middle, point} };
             }
+
+            else if (outLines.flags[i] & FT_CURVE_TAG_ON)
+            {
+                bezier.addPoint(point);
+                m_Curves.push_back(bezier);
+                bezier = Bezier{ {point} };
+            }
+            else
+                bezier.addPoint(point);
+
+            previusPoint = point;
         }
         start = end + 1;
     }
 
+    for (const auto& i : m_Curves)
+        std::cout << i.size() << ' ';
+    std::cout << '\n';
     
 }

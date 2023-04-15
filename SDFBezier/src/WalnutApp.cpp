@@ -20,7 +20,7 @@ public:
 	ExampleLayer()
 	{
 		
-		m_ImageData = new uint32_t[1600 * 874];
+		m_ImageData = new uint32_t[700 * 700];
 		m_Image = std::make_shared<Walnut::Image>(16, 16, Walnut::ImageFormat::RGBA, m_ImageData);
 	}
 
@@ -33,31 +33,50 @@ public:
 	{
 		const uint32_t width = m_Image->GetWidth();
 		const uint32_t height = m_Image->GetHeight();
-		
+
 		if (!m_RenderCurve) return;
 
 		for (size_t i = 0; i < width * height; i++)
 			m_ImageData[i] = 0x00000000;
-
 		
-		const auto jsp = m_Curve.getVectors();
-		solver.P_0 = jsp[0];
-		solver.p1 = jsp[1];
-		solver.p2 = jsp[2];
-		solver.p3 = jsp[3];
-		solver.m_Width = width;
-		solver.m_Height = height;
+		{
+			const Walnut::ScopedTimer timer{ "render time" };
+			const auto& curves = m_glyph.m_Curves;
 
-		const size_t index = m_Curve.getSize();
-
-		solver.recordComputeCommandBuffers(index);
-		solver.execute(index);
+			for (size_t i = 0; i < m_glyph.m_Curves.size(); i++)
+			{
+				const auto jsp = curves[i].getVectors();
+				solver.P_0 = jsp[0];
+				solver.p1 = jsp[1];
+				solver.p2 = jsp[2];
+				solver.p3 = jsp[3];
+				solver.m_Width = width;
+				solver.m_Height = height;
+				solver.m_CurveIndex = i;
+			
+				const size_t index = curves[i].size();
+				solver.recordComputeCommandBuffers(index);
+				solver.execute(index);
+			}
+		}
 
 		const std::vector<glm::vec4> result = solver.getResult();
 
 		for (size_t i = 0; i < result.size(); i++)
-			if (result[i].x < m_distance * m_distance)
-				m_ImageData[i] = 0xff00ff00;
+		{
+			//if (result[i].w == m_Index && result[i].x < m_distance * m_distance)
+				//m_ImageData[i] = 0xff'ff'ff'ff;
+			//else if (result[i].w == m_Index)
+				//m_ImageData[i] = 0xff'00'00'ff;
+			//else if (result[i].y && result[i].x < m_distance * m_distance)
+				//m_ImageData[i] = 0xff'ff'ff'00;
+			if (result[i].y)
+				m_ImageData[i] = 0xff'00'ff'00;
+			//else if (result[i].x < m_distance * m_distance)
+				//m_ImageData[i] = 0xff'ff'00'00;
+
+			//m_ImageData[i] = 0xff'00'00'00 | (*(uint32_t*)&result[i].w);
+		}
 
 		for (size_t i = 0; i < (height / 2 * width); i++) 
 		{
@@ -88,7 +107,7 @@ public:
 		ImGui::End();
 		ImGui::Begin("parameters");
 
-		const size_t pointCount = m_Curve.getSize();
+		/*const size_t pointCount = m_Curve.getSize();
 
 		ImGui::InputFloat("p0x", &m_Curve.m_Points[0].x, 0.01f, 1.f, "%.2f");
 		ImGui::InputFloat("p0y", &m_Curve.m_Points[0].y, 0.01f, 1.f, "%.2f");
@@ -106,7 +125,7 @@ public:
 		{
 			ImGui::InputFloat("p3x", &m_Curve.m_Points[3].x, 0.01f, 1.f, "%.2f");
 			ImGui::InputFloat("p3y", &m_Curve.m_Points[3].y, 0.01f, 1.f, "%.2f");
-		}
+		}*/
 
 		ImGui::InputInt("Index", (int*)&m_Index, 1, 100);
 
@@ -127,15 +146,15 @@ private:
 	uint32_t* m_ImageData = nullptr;
 	int m_RenderCurve = 0;
 
-	float m_distance = 0.01;
+	float m_distance = 0.001;
 
 	size_t m_Index = 0;
 
-	//Glyph m_glyph{ "..\\polices\\times.ttf", 'I' };
+	Glyph m_glyph{ "..\\polices\\times.ttf", 'O' };
 
 	SolveQuinticGPU solver;
 
-	Bezier m_Curve{ {{0, 0}, {1, 1}} };
+	//Bezier m_Curve{ {{0, 0}, {1, 1}} };
 
 };
 
