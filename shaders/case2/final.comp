@@ -3,7 +3,7 @@
 #define EPSILON 1e-5
 
 layout (binding = 0) uniform ParameterUBO {
-    vec2 P_0, p1, p2, p3;
+    vec2 P_0, p1, p2, p3, bisector;
     int maxIndex, width, height, curveIndex;
 } ubo;
 
@@ -35,9 +35,11 @@ float distSquared(const vec2 A, const vec2 B )
     return dot( C, C );
 }
 
-bool right(const in vec2 d, const in vec2 v)
+float crossZ(const in vec2 d, const in vec2 v)
 {
-    return (d.x * v.y - d.y * v.x) < 0 ? true: false;
+    const vec2 a = normalize(d); 
+    const vec2 b = normalize(v);
+    return (a.x * b.y - a.y * b.x);
 }
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
@@ -45,6 +47,7 @@ layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 void main()
 {
     const uint index = gl_GlobalInvocationID.x;
+
     if(index < ubo.maxIndex)
     {
         const float x = index % ubo.width;
@@ -54,12 +57,24 @@ void main()
         float real = roots[index].x;
         real = clamp(real, 0.f, 1.f);
         const vec2 Candidate = Bezier(real);
-        const float dis = distSquared(Candidate, point);
-        const bool inside = right(DBezier(real), point - Candidate);
+
+        const vec2 jsp = point - Candidate;
+
+        if(curveIndex % 2 == 0)
+        {
+            
+        }
+        else 
+        {
+
+        }
+
+        const float dis = distance(Candidate, point);
+        const float inside = crossZ(DBezier(real), point - Candidate);
 
         if(dis < result[index].x)
             result[index] = vec4(dis, inside, real, ubo.curveIndex);
-        else if (inside && !bool(result[index].y) && dis == result[index].x)
+        else if (abs(inside) > abs(result[index].y) && dis == result[index].x)
             result[index] = vec4(dis, inside, real, ubo.curveIndex);
     }
 }

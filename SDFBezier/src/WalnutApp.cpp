@@ -4,13 +4,39 @@
 #include "Walnut/Timer.h"
 #include "Walnut/Image.h"
 #include "glm/vec2.hpp"
+#include "glm/mat2x2.hpp"
 
 #include "Glyph.h"
 #include "SolveQuinticGPU.h"
 
+#include "../outdated/Draw.h"
+
 float inline crossProduct(const glm::vec2& d, const glm::vec2& v)
 {
 	return d.x * v.y - d.y * v.x;
+}
+
+glm::mat2 rotationMatrix(const float o)
+{
+	return {
+		glm::cos(o), glm::sin(o),
+		-glm::sin(o),  glm::cos(o)
+	};
+}
+
+
+glm::vec2 bisector(const glm::vec2 a, const glm::vec2 b)
+{
+	const glm::vec2 result = { 1, 0 };
+
+	const glm::vec2 x = glm::normalize(a);
+	const glm::vec2 y = glm::normalize(b);
+	
+	const float o = glm::acos(glm::dot(x, y)) / 2.0;
+
+	const auto matrix = rotationMatrix(o);
+	
+	return matrix * x;
 }
 
 class ExampleLayer : public Walnut::Layer
@@ -34,8 +60,6 @@ public:
 		const uint32_t width = m_Image->GetWidth();
 		const uint32_t height = m_Image->GetHeight();
 
-		//std::cout << width << ' ' << height  << '\n';
-
 		if (!m_RenderCurve) return;
 
 		for (size_t i = 0; i < width * height; i++)
@@ -45,7 +69,7 @@ public:
 			const Walnut::ScopedTimer timer{ "render time" };
 			const auto& curves = m_glyph.m_Curves;
 
-			for (size_t i = 0; i < m_glyph.m_Curves.size(); i++)
+			for (size_t i = 0; i < curves.size(); i++)
 			{
 				const auto jsp = curves[i].getVectors();
 				solver.P_0 = jsp[0];
@@ -55,11 +79,15 @@ public:
 				solver.m_Width = width;
 				solver.m_Height = height;
 				solver.m_CurveIndex = i;
+				solver.bis = bisector(
+					curves[i].getDerivateEnd(), curves[(i + 1) % curves.size()].getStartDerivate()
+				);
 			
 				const size_t index = curves[i].size();
 				solver.recordComputeCommandBuffers(index);
 				solver.execute(index);
 			}
+				
 		}
 
 		const std::vector<glm::vec4> result = solver.getResult();
@@ -68,16 +96,25 @@ public:
 		{
 			//if (result[i].w == m_Index && result[i].x < m_distance * m_distance)
 				//m_ImageData[i] = 0xff'ff'ff'ff;
-			//if (result[i].w == m_Index)
-			//	m_ImageData[i] = 0xff'00'00'ff;
-			//else if (result[i].y && result[i].x < m_distance * m_distance)
+			if (result[i].w == m_Index)
+				m_ImageData[i] = 0xff'00'00'ff;
+
+			//else if (result[i].y < 0 && result[i].x < m_distance * m_distance)
 				//m_ImageData[i] = 0xff'ff'ff'00;
-			if (result[i].y)
+
+			else if (result[i].y < 0)
 				m_ImageData[i] = 0xff'00'ff'00;
-			//else if (result[i].x < m_distance * m_distance)
+
+			//if (result[i].x < m_distance * m_distance)
 				//m_ImageData[i] = 0xff'ff'00'00;
 
 			//m_ImageData[i] = 0xff'00'00'00 | (*(uint32_t*)&result[i].w);
+		}
+
+		for (size_t i = 0; i < m_glyph.m_Curves[m_Index].size(); i++)
+		{
+			const auto point = m_glyph.m_Curves[m_Index].m_Points[i];
+			drawSq(point, width, height, m_ImageData, 15, 0xff00ffff);
 		}
 
 		for (size_t i = 0; i < (height / 2 * width); i++) 
@@ -148,7 +185,7 @@ private:
 	uint32_t* m_ImageData = nullptr;
 	int m_RenderCurve = 0;
 
-	float m_distance = 0.001;
+	float m_distance = 2.5;
 
 	size_t m_Index = 0;
 

@@ -5,7 +5,7 @@
 #define PI 3.14159265358979323846264338327950288419716939937510
 
 layout (binding = 0) uniform ParameterUBO {
-    vec2 P_0, p1, p2, p3;
+    vec2 P_0, p1, p2, p3, bisector;
     int maxIndex, width, height, curveIndex;
 } ubo;
 
@@ -83,40 +83,6 @@ vec2 sumOfApproximation(const uint index, const in vec2[3] values)
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
-// single threaded and faster
-
-// void main()
-// {
-//     uint index = gl_GlobalInvocationID.x;
-
-//     if(index < ubo.maxIndex)
-//     {
-//         for(uint i = 0; i < MAXITERATION; i++)
-//         {
-//             const vec2[3] CurrentApproximation = approximation[index];
-//             uint finish = 0;
-//             for(uint k = 0; k < 3; k++)
-//             {
-//                 const vec2 z = CurrentApproximation[k];
-//                 const vec2 p = f(z, Coefficients[index]);
-//                 const vec2 pp = fp(z, Coefficients[index]);
-
-//                 const vec2 POverPP = div(p, pp);
-//                 const vec2 sum = sumOfApproximation(k, CurrentApproximation);
-//                 const vec2 zPlusOne = z - div(POverPP, vec2(1, 0) - mul(POverPP, sum));
-//                 approximation[index][k] = zPlusOne;
-
-//                 if(distance(z, zPlusOne) < EPSILON)
-//                     finish++;
-//             }
-
-//             if(finish == 3)
-//                 break;
-//         }
-//     }
-// }
-
-
 vec2 complexSQRT(const float x)
 {
     if(x < 0)
@@ -127,7 +93,7 @@ vec2 complexSQRT(const float x)
 
 vec2 complexEXP(const float o)
 {
-    return vec2(cos(o), sin(0));
+    return vec2(cos(o), sin(o));
 }
 
 void main()

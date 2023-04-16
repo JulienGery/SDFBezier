@@ -65,6 +65,7 @@ public:
     glm::vec2 P_0, p1, p2, p3;
     size_t m_Width = 1920, m_Height = 1080;
     size_t m_CurveIndex;
+    glm::vec2 bis = {};
 
 private:
     VkInstance m_Instance;

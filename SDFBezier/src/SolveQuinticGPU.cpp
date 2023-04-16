@@ -32,7 +32,7 @@ const std::vector<const char*> validationLayers = {
 
 struct UniformBufferObject
 {
-    glm::vec2 P_0, p1, p2, p3;
+    glm::vec2 P_0, p1, p2, p3, bis;
     int maxIndex, width, height, curveIndex;
 };
 
