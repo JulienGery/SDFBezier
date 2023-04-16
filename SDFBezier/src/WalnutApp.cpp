@@ -79,9 +79,10 @@ public:
 				solver.m_Width = width;
 				solver.m_Height = height;
 				solver.m_CurveIndex = i;
-				solver.bis = bisector(
-					curves[i].getDerivateEnd(), curves[(i + 1) % curves.size()].getStartDerivate()
-				);
+				solver.bis = {
+						bisector(-curves[i - 1 % curves.size()].getDerivateEnd(), curves[i].getStartDerivate()),
+						bisector(-curves[i].getDerivateEnd(), curves[(i + 1) % curves.size()].getStartDerivate())
+				};
 			
 				const size_t index = curves[i].size();
 				solver.recordComputeCommandBuffers(index);

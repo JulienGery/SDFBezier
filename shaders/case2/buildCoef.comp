@@ -1,7 +1,8 @@
 #version 450
 
 layout (binding = 0) uniform ParameterUBO {
-    vec2 P_0, p1, p2, p3, bisector;
+    vec2 P_0, p1, p2, p3;
+    vec4 bisector;
     int maxIndex, width, height, curveIndex;
 } ubo;
 

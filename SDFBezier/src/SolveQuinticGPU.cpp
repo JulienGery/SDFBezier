@@ -32,7 +32,8 @@ const std::vector<const char*> validationLayers = {
 
 struct UniformBufferObject
 {
-    glm::vec2 P_0, p1, p2, p3, bis;
+    glm::vec2 P_0, p1, p2, p3;
+    glm::vec4 bis;
     int maxIndex, width, height, curveIndex;
 };
 
@@ -767,6 +768,7 @@ void SolveQuinticGPU::updateUBO()
     ubo.height = m_Height;
     ubo.maxIndex = m_Width * m_Height;
     ubo.curveIndex = m_CurveIndex;
+    ubo.bis = m_Bis;
 
     memcpy(m_UniformBufferMapped, &ubo, sizeof(ubo));
 }
