@@ -76,9 +76,9 @@ void main()
                 const float dis = distance(Candidate, point);
                 const float inside = crossZ(DBezier(real), jsp);
 
-                if(dis < result[index].x)
+                if(dis < result[index].x && 0.f < real && real < 1.f)
                     result[index] = vec4(dis, inside, real, ubo.curveIndex);
-                else if (crossZ(ubo.bisector.xy, point - Bezier(0)) < 0 && crossZ(ubo.bisector.zw, point - Bezier(1)) > 0 && dis == result[index].x)
+                else if (crossZ(ubo.bisector.xy, point - Bezier(0)) < 0 && crossZ(ubo.bisector.zw, point - Bezier(1)) > 0)
                     result[index] = vec4(dis, inside, real, ubo.curveIndex);
             }
         }
