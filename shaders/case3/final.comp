@@ -45,10 +45,10 @@ float distSquared(const vec2 A, const vec2 B )
     return dot( C, C );
 }
 
-float crossN(const vec2 d, const vec2 v)
-{
-    return d.x * v.y - d.y * v.x;
-}
+// float crossN(const vec2 d, const vec2 v)
+// {
+//     return d.x * v.y - d.y * v.x;
+// }
 
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
@@ -62,29 +62,25 @@ void main()
         const float y = (index - x) / ubo.width;
         const vec2 point = vec2(x, y);
 
-        if(crossN(bisector.xy, point - Bezier(0)) < 0 && crossN(bisector.zw, point - Bezier(1)) > 0)
+        for(uint i = 0; i < 3; i++)
         {
-            for(uint i = 0; i < 3; i++)
+            const vec2 root = roots[index][i].xy;
+            if(abs(root.y) < 1e-05)
             {
-                const vec2 root = roots[index][i].xy;
-                if(abs(root.y) < 1e-05)
-                {
-                    float real = root.x;    
-                    real = clamp(real, 0.f, 1.f);
-                    const vec2 Candidate = Bezier(real);
+                float real = root.x;    
+                real = clamp(real, 0.f, 1.f);
+                const vec2 Candidate = Bezier(real);
 
-                    const vec2 jsp = point - Candidate;
+                const vec2 jsp = point - Candidate;
 
-                    const float dis = distance(Candidate, point);
-                    const float inside = crossZ(DBezier(real), jsp);
+                const float dis = distance(Candidate, point);
+                const float inside = crossZ(DBezier(real), jsp);
 
-                    if(dis < result[index].x)
-                        result[index] = vec4(dis, inside, real, ubo.curveIndex);
-                    else if (abs(inside) > abs(result[index].y) && dis == result[index].x)
-                        result[index] = vec4(dis, inside, real, ubo.curveIndex);
-                }
+                if(dis < result[index].x)
+                    result[index] = vec4(dis, inside, real, ubo.curveIndex);
+                else if (crossZ(ubo.bisector.xy, point - Bezier(0)) < 0 && crossZ(ubo.bisector.zw, point - Bezier(1)) > 0 && dis == result[index].x)
+                    result[index] = vec4(dis, inside, real, ubo.curveIndex);
             }
         }
-
     }
 }

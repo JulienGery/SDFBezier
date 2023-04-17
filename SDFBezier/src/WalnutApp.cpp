@@ -62,6 +62,8 @@ public:
 
 		if (!m_RenderCurve) return;
 
+		std::vector<glm::vec4> bistectors{};
+
 		for (size_t i = 0; i < width * height; i++)
 			m_ImageData[i] = 0x00000000;
 		
@@ -71,6 +73,7 @@ public:
 
 			for (size_t i = 0; i < curves.size(); i++)
 			{
+				
 				const auto jsp = curves[i].getVectors();
 				solver.P_0 = jsp[0];
 				solver.p1 = jsp[1];
@@ -79,10 +82,13 @@ public:
 				solver.m_Width = width;
 				solver.m_Height = height;
 				solver.m_CurveIndex = i;
-				solver.bis = {
-						bisector(-curves[i - 1 % curves.size()].getDerivateEnd(), curves[i].getStartDerivate()),
+				
+				solver.m_Bis = {
+						bisector(-curves[(i - 1) % curves.size()].getDerivateEnd(), curves[i].getStartDerivate()),
 						bisector(-curves[i].getDerivateEnd(), curves[(i + 1) % curves.size()].getStartDerivate())
 				};
+
+				bistectors.push_back(solver.m_Bis);
 			
 				const size_t index = curves[i].size();
 				solver.recordComputeCommandBuffers(index);
@@ -112,10 +118,25 @@ public:
 			//m_ImageData[i] = 0xff'00'00'00 | (*(uint32_t*)&result[i].w);
 		}
 
-		for (size_t i = 0; i < m_glyph.m_Curves[m_Index].size(); i++)
+		//for (size_t i = 0; i < bistectors.size(); i++)
 		{
-			const auto point = m_glyph.m_Curves[m_Index].m_Points[i];
-			drawSq(point, width, height, m_ImageData, 15, 0xff00ffff);
+			const size_t i = m_Index;
+
+			const glm::vec4 point = bistectors[i];
+			const auto& curve = m_glyph.m_Curves[i];
+
+			const glm::vec2 firstBisector = { point.x, point.y };
+			const glm::vec2 secondBisector = { point.z, point.w };
+
+			drawSq(firstBisector * 50.f + curve.getFirstPoint(), width, height, m_ImageData, 21, 0xffff00ff);
+			drawSq(secondBisector * 50.f + curve.getLastPoint(), width, height, m_ImageData, 21, 0xffffffff);
+
+			drawSq(curve.getFirstPoint(), width, height, m_ImageData, 21, 0xffff00ff);
+			drawSq(curve.getLastPoint(), width, height, m_ImageData, 21, 0xffffffff);
+
+
+			//const auto point = m_glyph.m_Curves[m_Index].m_Points[i];
+			//drawSq(point, width, height, m_ImageData, 15, 0xff00ffff);
 		}
 
 		for (size_t i = 0; i < (height / 2 * width); i++) 

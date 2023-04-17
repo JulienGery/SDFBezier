@@ -5,6 +5,7 @@
 #include <glm/vec2.hpp>
 
 #include <stdexcept>
+#include <iostream>
 
 struct Bezier
 {
@@ -57,6 +58,15 @@ struct Bezier
 
 		return sec - start;
 	}
+
+	glm::vec2 getLastPoint() const
+	{
+		const size_t end = m_Points.size() - 1;
+
+		return m_Points[end];
+	}
+
+	glm::vec2 getFirstPoint() const { return m_Points[0]; }
 
 	size_t size() const { return m_Points.size(); }
 	
