@@ -10,34 +10,14 @@
 #include "SolveQuinticGPU.h"
 
 #include "../outdated/Draw.h"
+#include <complex>
+
 
 float inline crossProduct(const glm::vec2& d, const glm::vec2& v)
 {
 	return d.x * v.y - d.y * v.x;
 }
 
-glm::mat2 rotationMatrix(const float o)
-{
-	return {
-		glm::cos(o), glm::sin(o),
-		-glm::sin(o),  glm::cos(o)
-	};
-}
-
-
-glm::vec2 bisector(const glm::vec2 a, const glm::vec2 b)
-{
-	const glm::vec2 result = { 1, 0 };
-
-	const glm::vec2 x = glm::normalize(a);
-	const glm::vec2 y = glm::normalize(b);
-	
-	const float o = glm::acos(glm::dot(x, y)) / 2.0;
-
-	const auto matrix = rotationMatrix(o);
-	
-	return matrix * x;
-}
 
 class ExampleLayer : public Walnut::Layer
 {
@@ -62,8 +42,6 @@ public:
 
 		if (!m_RenderCurve) return;
 
-		std::vector<glm::vec4> bistectors{};
-
 		for (size_t i = 0; i < width * height; i++)
 			m_ImageData[i] = 0x00000000;
 		
@@ -73,7 +51,6 @@ public:
 
 			for (size_t i = 0; i < curves.size(); i++)
 			{
-				
 				const auto jsp = curves[i].getVectors();
 				solver.P_0 = jsp[0];
 				solver.p1 = jsp[1];
@@ -82,20 +59,15 @@ public:
 				solver.m_Width = width;
 				solver.m_Height = height;
 				solver.m_CurveIndex = i;
+				solver.m_Bis = m_glyph.m_Bisectors[i];
 				
-				solver.m_Bis = {
-						bisector(-curves[(i - 1) % curves.size()].getDerivateEnd(), curves[i].getStartDerivate()),
-						bisector(-curves[i].getDerivateEnd(), curves[(i + 1) % curves.size()].getStartDerivate())
-				};
-
-				bistectors.push_back(solver.m_Bis);
-			
 				const size_t index = curves[i].size();
 				solver.recordComputeCommandBuffers(index);
 				solver.execute(index);
 			}
 				
 		}
+
 
 		const std::vector<glm::vec4> result = solver.getResult();
 
@@ -104,7 +76,7 @@ public:
 			//if (result[i].w == m_Index && result[i].x < m_distance * m_distance)
 				//m_ImageData[i] = 0xff'ff'ff'ff;
 			if (result[i].w == m_Index)
-				m_ImageData[i] = 0xff'00'00'ff;
+				m_ImageData[i] = 0xff'ff'ff'ff;
 
 			//else if (result[i].y < 0 && result[i].x < m_distance * m_distance)
 				//m_ImageData[i] = 0xff'ff'ff'00;
@@ -118,25 +90,20 @@ public:
 			//m_ImageData[i] = 0xff'00'00'00 | (*(uint32_t*)&result[i].w);
 		}
 
-		//for (size_t i = 0; i < bistectors.size(); i++)
+		for (size_t i = m_Index; i < m_Index + 1; i++)
 		{
-			const size_t i = m_Index;
-
-			const glm::vec4 point = bistectors[i];
+			break;
+			const glm::vec4 point = m_glyph.m_Bisectors[i];
 			const auto& curve = m_glyph.m_Curves[i];
 
 			const glm::vec2 firstBisector = { point.x, point.y };
 			const glm::vec2 secondBisector = { point.z, point.w };
 
-			drawSq(firstBisector * 50.f + curve.getFirstPoint(), width, height, m_ImageData, 21, 0xffff00ff);
-			drawSq(secondBisector * 50.f + curve.getLastPoint(), width, height, m_ImageData, 21, 0xffffffff);
+			drawSq(firstBisector * 50.f + curve.getFirstPoint(), width, height, m_ImageData, 21, 0xffffff00);
+			drawSq(secondBisector * 50.f + curve.getLastPoint(), width, height, m_ImageData, 21, 0xff00f0ff);
 
-			drawSq(curve.getFirstPoint(), width, height, m_ImageData, 21, 0xffff00ff);
-			drawSq(curve.getLastPoint(), width, height, m_ImageData, 21, 0xffffffff);
-
-
-			//const auto point = m_glyph.m_Curves[m_Index].m_Points[i];
-			//drawSq(point, width, height, m_ImageData, 15, 0xff00ffff);
+			drawSq(curve.getFirstPoint(), width, height, m_ImageData, 21, 0xffff0000);
+			drawSq(curve.getLastPoint(), width, height, m_ImageData, 21, 0xff0000ff);
 		}
 
 		for (size_t i = 0; i < (height / 2 * width); i++) 
@@ -211,7 +178,7 @@ private:
 
 	size_t m_Index = 0;
 
-	Glyph m_glyph{ "..\\polices\\times.ttf", 'u' };
+	Glyph m_glyph{ "..\\polices\\times.ttf", 'A' };
 
 	SolveQuinticGPU solver;
 

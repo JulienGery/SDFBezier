@@ -96,6 +96,10 @@ bool isDeviceSuitable(VkPhysicalDevice m_Device) {
     vkGetPhysicalDeviceProperties(m_Device, &deviceProperties);
     vkGetPhysicalDeviceFeatures(m_Device, &deviceFeatures);
 
+    // will not run on integrated gpu at 4k
+    //if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
+        //return false;
+
     std::cout << "\033[36m" << deviceProperties.deviceName << "\033[0m" << '\n';
     QueueFamilyIndices indices = findQueueFamilies(m_Device);
     return indices.isComplete();

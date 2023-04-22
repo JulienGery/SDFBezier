@@ -1,9 +1,10 @@
 #pragma once
 
+#include "glm/vec2.hpp"
+#include "glm/vec4.hpp"
+
 #include <string>
 #include <vector>
-#include <glm/vec2.hpp>
-
 #include <stdexcept>
 #include <iostream>
 
@@ -92,7 +93,9 @@ class Glyph
 {
 public:
 	char m_Character;
+	OutLines m_Outlines;
 	std::vector<Bezier> m_Curves;
+	std::vector<glm::vec4> m_Bisectors;
 	std::string m_Path;
 
 	Glyph(const std::string& path, const char& character);
@@ -104,8 +107,10 @@ public:
 
 private:
 	glm::vec2 m_BottomLeft, m_TopRight, m_Barycentre;
+	std::vector<uint16_t> m_Split;
 
-	OutLines readTTF();
-	void loadGlyph() { BuildCurves(readTTF()); };
-	void BuildCurves(const OutLines& jsp);
+	void readTTF();
+	void BuildCurves();
+	void generateBisectors();
+	void loadGlyph() { readTTF();  BuildCurves(); generateBisectors(); };
 };

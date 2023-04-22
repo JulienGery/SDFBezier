@@ -43,10 +43,10 @@ float crossZ(const vec2 d, const vec2 v)
     return (a.x * b.y - a.y * b.x);
 }
 
-// float crossN(const vec2 d, const vec2 v)
-// {
-//     return d.x * v.y - d.y * v.x;
-// }
+float crossN(const vec2 d, const vec2 v)
+{
+    return d.x * v.y - d.y * v.x;
+}
 
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
@@ -68,9 +68,9 @@ void main()
         const float dis = distance(Candidate, point);
         const float inside = crossZ(DBezier(real), point - Candidate);
 
-        if(dis < result[index].x && 0.f < real && real < 1.f)
+        if(dis <= result[index].x && 0. < real && real < 1.)
             result[index] = vec4(dis, inside, real, ubo.curveIndex);
-        else if (crossZ(ubo.bisector.xy, point - Bezier(0)) < 0 && crossZ(ubo.bisector.zw, point - Bezier(1)) > 0)
+        else if(dis <= result[index].x && crossN(ubo.bisector.xy, point - Bezier(0.)) <= 0. && crossN(ubo.bisector.zw, point - Bezier(1.)) >= 0.)
             result[index] = vec4(dis, inside, real, ubo.curveIndex);
     }
 }
