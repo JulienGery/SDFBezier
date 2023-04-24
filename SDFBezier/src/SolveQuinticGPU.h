@@ -61,6 +61,7 @@ public:
     void execute(const size_t index);
 
     std::vector<glm::vec4> getResult();
+    void getCoeff(std::vector<glm::vec4[4]>& result);
 
     glm::vec2 P_0, p1, p2, p3;
     size_t m_Width = 3840, m_Height = 2400;

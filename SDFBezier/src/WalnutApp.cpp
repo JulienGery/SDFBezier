@@ -40,6 +40,8 @@ public:
 		const uint32_t width = m_Image->GetWidth();
 		const uint32_t height = m_Image->GetHeight();
 
+		std::vector<glm::vec4[4]> coef(width * height);
+
 		if (!m_RenderCurve) return;
 
 		for (size_t i = 0; i < width * height; i++)
@@ -64,10 +66,12 @@ public:
 				const size_t index = curves[i].size();
 				solver.recordComputeCommandBuffers(index);
 				solver.execute(index);
+
+				//if (i == m_Index)
+					//solver.getCoeff(coef);
 			}
 				
 		}
-
 
 		const std::vector<glm::vec4> result = solver.getResult();
 
@@ -88,7 +92,29 @@ public:
 				//m_ImageData[i] = 0xff'ff'00'00;
 
 			//m_ImageData[i] = 0xff'00'00'00 | (*(uint32_t*)&result[i].w);
-		}
+		} 
+
+		/*for(size_t i = 1; i < width * height - 1; i++)
+			if (result[i - 1].y < 0. && result[i].y > 0. && result[i + 1].y < 0.)
+			{
+				const size_t x = i % width;
+				const size_t y = (i - x) / width;
+
+				std::cout << x << ' ' << y << '\n';
+			}*/
+
+		m_ImageData[68 * width + 477] = 0xff0000ff;
+
+		std::cout << result[68 * width + 477].x << ' ' << result[68 * width + 477].y << ' '
+				  << result[68 * width + 477].z << ' ' << result[68 * width + 477].w << '\n';
+
+		for (size_t i = 0; i < 4; i++)
+			std::cout << coef[68 * width + 477][i].x << ' ';
+		std::cout << '\n';
+
+		//724 50
+		//725 69
+		//477 68
 
 		for (size_t i = m_Index; i < m_Index + 1; i++)
 		{
@@ -178,7 +204,7 @@ private:
 
 	size_t m_Index = 0;
 
-	Glyph m_glyph{ "..\\polices\\times.ttf", 'A' };
+	Glyph m_glyph{ "..\\polices\\times.ttf", 'S' };
 
 	SolveQuinticGPU solver;
 

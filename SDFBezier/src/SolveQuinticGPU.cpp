@@ -434,6 +434,24 @@ std::vector<glm::vec4> SolveQuinticGPU::getResult()
     return result;
 }
 
+void SolveQuinticGPU::getCoeff(std::vector<glm::vec4[4]>& result)
+{
+    const size_t BufferSize = result.size() * sizeof(glm::vec4[4]);
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    createBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+    void* data;
+    vkMapMemory(m_Device, stagingBufferMemory, 0, BufferSize, 0, &data);
+    copyBuffer(m_CoefBuffer, stagingBuffer, BufferSize);
+    memcpy(result.data(), data, BufferSize);
+    vkUnmapMemory(m_Device, stagingBufferMemory);
+
+    vkDestroyBuffer(m_Device, stagingBuffer, nullptr);
+    vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
+
+}
+
 void SolveQuinticGPU::createCommandPool()
 {
     QueueFamilyIndices queueFamilyIndices = findQueueFamilies(m_PhysicalDevice);
@@ -451,7 +469,7 @@ void SolveQuinticGPU::createCommandPool()
 void SolveQuinticGPU::createShaderStorageBuffers()
 {
     VkDeviceSize bufferSize = m_Width * m_Height;
-    createBuffer(bufferSize * sizeof(Coeff), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_CoefBuffer, m_CoefBufferMemory);
+    createBuffer(bufferSize * sizeof(Coeff), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_CoefBuffer, m_CoefBufferMemory);
     createBuffer(bufferSize * sizeof(Roots), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_ApproximationBuffer, m_ApproximationBufferMemory);
     createBuffer(bufferSize * sizeof(glm::vec4), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_resultBuffer, m_resultBufferMemory);
 }
@@ -574,6 +592,7 @@ VkShaderModule SolveQuinticGPU::createShaderModule(const std::vector<char>& code
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = code.size();
     createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+    //createInfo.pNext = 
 
     VkShaderModule shaderModule;
     if (vkCreateShaderModule(m_Device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {

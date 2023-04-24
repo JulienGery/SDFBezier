@@ -186,5 +186,3 @@ void Glyph::generateBisectors()
         start = end + 1;
     }
 }
-
-
