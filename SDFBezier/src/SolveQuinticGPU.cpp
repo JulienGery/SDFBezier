@@ -366,10 +366,19 @@ void SolveQuinticGPU::createComputePipelineHelper(const std::string& path, VkPip
     computeShaderStageInfo.module = computeShaderModule;
     computeShaderStageInfo.pName = "main";
 
+    /*VkPushConstantRange pushConstant;
+    pushConstant.offset = 0;
+    pushConstant.size = sizeof(UniformBufferObject);
+    pushConstant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;*/
+
+    // TODO switch to push constants
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
     pipelineLayoutInfo.pSetLayouts = &m_ComputeDescriptorSetLayout;
+    //pipelineLayoutInfo.pPushConstantRanges = &pushConstant;
+    //pipelineLayoutInfo.pushConstantRangeCount = 1;
 
     if (vkCreatePipelineLayout(m_Device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create compute pipeline layout!");
@@ -379,6 +388,7 @@ void SolveQuinticGPU::createComputePipelineHelper(const std::string& path, VkPip
     pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
     pipelineInfo.layout = pipelineLayout;
     pipelineInfo.stage = computeShaderStageInfo;
+
 
     if (vkCreateComputePipelines(m_Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS) {
         throw std::runtime_error("failed to create compute pipeline!");

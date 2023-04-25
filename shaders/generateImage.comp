@@ -1,0 +1,54 @@
+#version 450
+
+layout ( std140, binding = 0 ) uniform constants
+{
+    uint maxIndex;
+} pushConstants;
+
+layout (std140, binding = 1) readonly buffer UBO 
+{
+    vec4 angles[ ];
+};
+
+layout (std140, binding = 2) readonly buffer Image
+{
+    vec4 result[ ];
+    //layout: distance, inside, root, curveIndex
+};
+
+layout (std140, binding = 3) writeonly buffer OUTIMAGE
+{
+    uint image[ ];
+};
+
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+    uint index = gl_GlobalInvocationID.x;
+    if(index < pushConstants.maxIndex)
+    {
+        vec4 pixel = result[index];
+
+        uint curveIndex = uint(pixel.w);
+        uint angleIndex;
+        
+        if(pixel.z < 0.5)
+            angleIndex = curveIndex;
+        else
+            angleIndex = curveIndex + 1;
+
+        const uint subAngleIndex = angleIndex % 4;
+        const uint GroupeAngleIndex = (angleIndex - subAngleIndex) / 4;
+
+        float angle;
+        if(subAngleIndex == 0)
+            angle = angles[GroupeAngleIndex].x;
+        else if(subAngleIndex == 1)
+            angle = angles[GroupeAngleIndex].y;
+        else if(subAngleIndex == 2)
+            angle = angles[GroupeAngleIndex].z;
+        else
+            angle = angles[GroupeAngleIndex].w;
+    }
+}

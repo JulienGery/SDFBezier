@@ -77,58 +77,44 @@ public:
 
 		for (size_t i = 0; i < result.size(); i++)
 		{
-			//if (result[i].w == m_Index && result[i].x < m_distance * m_distance)
-				//m_ImageData[i] = 0xff'ff'ff'ff;
 			if (result[i].w == m_Index)
 				m_ImageData[i] = 0xff'ff'ff'ff;
-
-			//else if (result[i].y < 0 && result[i].x < m_distance * m_distance)
-				//m_ImageData[i] = 0xff'ff'ff'00;
-
 			else if (result[i].y < 0)
 				m_ImageData[i] = 0xff'00'ff'00;
-
-			//if (result[i].x < m_distance * m_distance)
-				//m_ImageData[i] = 0xff'ff'00'00;
-
-			//m_ImageData[i] = 0xff'00'00'00 | (*(uint32_t*)&result[i].w);
 		} 
 
-		/*for(size_t i = 1; i < width * height - 1; i++)
-			if (result[i - 1].y < 0. && result[i].y > 0. && result[i + 1].y < 0.)
-			{
-				const size_t x = i % width;
-				const size_t y = (i - x) / width;
+		//for(size_t i = 1; i < width * height - 1; i++)
+		//	if (result[i - 1].y < 0. && result[i].y > 0. && result[i + 1].y < 0.)
+		//	{
+		//		const size_t x = i % width;
+		//		const size_t y = (i - x) / width;
 
-				std::cout << x << ' ' << y << '\n';
-			}*/
+		//		std::cout << x << ' ' << y << '\n';
+		//	}
 
-		m_ImageData[68 * width + 477] = 0xff0000ff;
+		//m_ImageData[69 * width + 725] = 0xff'00'00'ff;
 
-		std::cout << result[68 * width + 477].x << ' ' << result[68 * width + 477].y << ' '
-				  << result[68 * width + 477].z << ' ' << result[68 * width + 477].w << '\n';
+		//std::cout << result[69 * width + 725].x << ' ' << result[69 * width + 725].y << ' '
+		//	<< result[69 * width + 725].z << ' ' << result[69 * width + 725].w << '\n';
 
-		for (size_t i = 0; i < 4; i++)
-			std::cout << coef[68 * width + 477][i].x << ' ';
-		std::cout << '\n';
+		//for (size_t i = 0; i < 4; i++)
+		//	std::cout << coef[69 * width + 725][i].x << ' ';
+		//std::cout << '\n';
 
-		//724 50
 		//725 69
-		//477 68
 
 		for (size_t i = m_Index; i < m_Index + 1; i++)
 		{
-			break;
 			const glm::vec4 point = m_glyph.m_Bisectors[i];
 			const auto& curve = m_glyph.m_Curves[i];
 
 			const glm::vec2 firstBisector = { point.x, point.y };
 			const glm::vec2 secondBisector = { point.z, point.w };
 
-			drawSq(firstBisector * 50.f + curve.getFirstPoint(), width, height, m_ImageData, 21, 0xffffff00);
+			//drawSq(firstBisector * 50.f + curve.getFirstPoint(), width, height, m_ImageData, 21, 0xffffff00);
 			drawSq(secondBisector * 50.f + curve.getLastPoint(), width, height, m_ImageData, 21, 0xff00f0ff);
 
-			drawSq(curve.getFirstPoint(), width, height, m_ImageData, 21, 0xffff0000);
+			//drawSq(curve.getFirstPoint(), width, height, m_ImageData, 21, 0xffff0000);
 			drawSq(curve.getLastPoint(), width, height, m_ImageData, 21, 0xff0000ff);
 		}
 
@@ -204,11 +190,9 @@ private:
 
 	size_t m_Index = 0;
 
-	Glyph m_glyph{ "..\\polices\\times.ttf", 'S' };
+	Glyph m_glyph{ "..\\polices\\times.ttf", 'A' };
 
 	SolveQuinticGPU solver;
-
-	//Bezier m_Curve{ {{0, 0}, {1, 1}} };
 
 };
 
