@@ -50,5 +50,7 @@ void main()
             angle = angles[GroupeAngleIndex].z;
         else
             angle = angles[GroupeAngleIndex].w;
+
+        bool inAngle
     }
 }

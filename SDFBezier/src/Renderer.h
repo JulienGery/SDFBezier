@@ -51,17 +51,17 @@ struct Coeff
     }
 };
 
-class SolveQuinticGPU
+class Renderer
 {
 public:
-    SolveQuinticGPU() { initVulkan(); }
-    ~SolveQuinticGPU() { cleanup(); }
+    Renderer() { initVulkan(); }
+    ~Renderer() { cleanup(); }
     
     void recordComputeCommandBuffers(const size_t index);
-    void execute(const size_t index);
+    void render();
 
     std::vector<glm::vec4> getResult();
-    void getCoeff(std::vector<glm::vec4[4]>& result);
+    //void getCoeff(std::vector<glm::vec4[4]>& result);
 
     glm::vec2 P_0, p1, p2, p3;
     size_t m_Width = 3840, m_Height = 2400;
@@ -85,10 +85,6 @@ private:
     std::vector<VkPipeline> m_Pipelines;
     std::vector<VkPipelineLayout> m_PipelinesLayouts;
 
-    VkBuffer m_CoefBuffer;
-    VkDeviceMemory m_CoefBufferMemory;
-    VkBuffer m_ApproximationBuffer;
-    VkDeviceMemory m_ApproximationBufferMemory;
     VkBuffer m_resultBuffer;
     VkDeviceMemory m_resultBufferMemory;
 

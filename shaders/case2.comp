@@ -1,0 +1,77 @@
+#version 450
+
+layout ( push_constant ) uniform constants
+{
+    vec2 P_0, p1, p2, p3;
+    vec4 bisector;
+    int maxIndex, width, height, curveIndex;
+} PushConstants;
+
+layout (std140, binding = 1) buffer IMAGEOUT
+{
+    vec4 result[ ];
+};
+
+vec2 Bezier(const float t)
+{
+    return PushConstants.P_0 +
+            t * PushConstants.p1;
+}
+
+vec2 DBezier(const float t)
+{
+    return PushConstants.p1;
+}
+
+float crossZ(const vec2 d, const vec2 v)
+{
+    const vec2 a = normalize(d); 
+    const vec2 b = normalize(v);
+    return (a.x * b.y - a.y * b.x);
+}
+
+float crossN(const vec2 d, const vec2 v)
+{
+    return d.x * v.y - d.y * v.x;
+}
+
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+    uint index = gl_GlobalInvocationID.x;
+    if(index < PushConstants.maxIndex)
+    {
+        //Coef
+
+        if(PushConstants.curveIndex == 0)
+            result[index] = vec4(3.402823466E+38, 0, 0, 0);
+
+        const float x = index % PushConstants.width;
+        const float y = (index - x) / float(PushConstants.width);
+
+        const vec2 point = vec2(x, y);
+
+        if(! (crossN(PushConstants.bisector.xy, point - Bezier(0.)) <= 0. && crossN(PushConstants.bisector.zw, point - Bezier(1.)) >= 0.))
+            return;
+
+        const vec2 p = point - PushConstants.P_0;
+
+        const float a = dot(PushConstants.p1, PushConstants.p1);
+        const float b = -dot(PushConstants.p1, p);
+
+        //Solve
+
+        const vec2 root = vec2(-b / a, 0);
+
+        float real = root.x;
+        real = clamp(real, 0.f, 1.f);
+        const vec2 closestPoint = Bezier(real);
+
+        const float dis = distance(closestPoint, point);
+        const float inside = crossZ(DBezier(real), point - closestPoint);
+
+        if(dis <= result[index].x && crossN(PushConstants.bisector.xy, point - Bezier(0.)) <= 0. && crossN(PushConstants.bisector.zw, point - Bezier(1.)) >= 0.)
+            result[index] = vec4(dis, inside, real, PushConstants.curveIndex);
+    }
+}

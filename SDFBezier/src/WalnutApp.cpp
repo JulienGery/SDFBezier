@@ -7,7 +7,7 @@
 #include "glm/mat2x2.hpp"
 
 #include "Glyph.h"
-#include "SolveQuinticGPU.h"
+#include "Renderer.h"
 
 #include "../outdated/Draw.h"
 #include <complex>
@@ -40,8 +40,6 @@ public:
 		const uint32_t width = m_Image->GetWidth();
 		const uint32_t height = m_Image->GetHeight();
 
-		std::vector<glm::vec4[4]> coef(width * height);
-
 		if (!m_RenderCurve) return;
 
 		for (size_t i = 0; i < width * height; i++)
@@ -63,12 +61,9 @@ public:
 				solver.m_CurveIndex = i;
 				solver.m_Bis = m_glyph.m_Bisectors[i];
 				
-				const size_t index = curves[i].size();
-				solver.recordComputeCommandBuffers(index);
-				solver.execute(index);
-
-				//if (i == m_Index)
-					//solver.getCoeff(coef);
+				const size_t curveSize = curves[i].size();
+				solver.recordComputeCommandBuffers(curveSize);
+				solver.render();
 			}
 				
 		}
@@ -83,26 +78,6 @@ public:
 				m_ImageData[i] = 0xff'00'ff'00;
 		} 
 
-		//for(size_t i = 1; i < width * height - 1; i++)
-		//	if (result[i - 1].y < 0. && result[i].y > 0. && result[i + 1].y < 0.)
-		//	{
-		//		const size_t x = i % width;
-		//		const size_t y = (i - x) / width;
-
-		//		std::cout << x << ' ' << y << '\n';
-		//	}
-
-		//m_ImageData[69 * width + 725] = 0xff'00'00'ff;
-
-		//std::cout << result[69 * width + 725].x << ' ' << result[69 * width + 725].y << ' '
-		//	<< result[69 * width + 725].z << ' ' << result[69 * width + 725].w << '\n';
-
-		//for (size_t i = 0; i < 4; i++)
-		//	std::cout << coef[69 * width + 725][i].x << ' ';
-		//std::cout << '\n';
-
-		//725 69
-
 		for (size_t i = m_Index; i < m_Index + 1; i++)
 		{
 			const glm::vec4 point = m_glyph.m_Bisectors[i];
@@ -111,10 +86,10 @@ public:
 			const glm::vec2 firstBisector = { point.x, point.y };
 			const glm::vec2 secondBisector = { point.z, point.w };
 
-			//drawSq(firstBisector * 50.f + curve.getFirstPoint(), width, height, m_ImageData, 21, 0xffffff00);
+			drawSq(firstBisector * 50.f + curve.getFirstPoint(), width, height, m_ImageData, 21, 0xffffff00);
 			drawSq(secondBisector * 50.f + curve.getLastPoint(), width, height, m_ImageData, 21, 0xff00f0ff);
 
-			//drawSq(curve.getFirstPoint(), width, height, m_ImageData, 21, 0xffff0000);
+			drawSq(curve.getFirstPoint(), width, height, m_ImageData, 21, 0xffff0000);
 			drawSq(curve.getLastPoint(), width, height, m_ImageData, 21, 0xff0000ff);
 		}
 
@@ -190,9 +165,9 @@ private:
 
 	size_t m_Index = 0;
 
-	Glyph m_glyph{ "..\\polices\\times.ttf", 'A' };
+	Glyph m_glyph{ "..\\polices\\times.ttf", 'W' };
 
-	SolveQuinticGPU solver;
+	Renderer solver;
 
 };
 
