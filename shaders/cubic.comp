@@ -209,6 +209,7 @@ void main()
             coefficients[3] = vec2(a, 0);
         }
 
+        // solve
 
         float a = coefficients[3].x;
         float b = coefficients[2].x;
@@ -229,7 +230,7 @@ void main()
         vec2[3] roots;
         vec2 w3 = vec2(R, 0) + complexSQRT(R * R + Q * Q * Q);
 
-        if(abs(w3.x) < EPSILON && abs(w3.y) < EPSILON)
+        if(abs(w3.x) < EPSILON*1e-02 || abs(w3.y) < EPSILON*1e-02)
             roots = Aberth(coefficients);
         else
         {
@@ -244,6 +245,8 @@ void main()
                 roots[i] = x - vec2(b / 3.0, 0);
             }
         }
+
+        //final
 
         for(uint i = 0; i < 3; i++)
         {

@@ -97,6 +97,7 @@ public:
 	std::vector<Bezier> m_Curves;
 	std::vector<glm::vec4> m_Bisectors;
 	std::string m_Path;
+	std::vector<float> m_Angles;
 
 	Glyph(const std::string& path, const char& character);
 

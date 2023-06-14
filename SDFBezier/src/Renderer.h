@@ -26,6 +26,14 @@ struct Roots
     }
 };
 
+
+struct OUTPUTIMAGE
+{
+    uint32_t color;
+    uint32_t padding[3];
+};
+
+
 struct Coeff
 {
     glm::vec4 _coeff[6];
@@ -59,6 +67,12 @@ public:
     
     void recordComputeCommandBuffers(const size_t index);
     void render();
+    std::vector<OUTPUTIMAGE> getImage();
+
+    void generateImage();
+
+    void updateUBO(const std::vector<float>& angles);
+
 
     std::vector<glm::vec4> getResult();
     //void getCoeff(std::vector<glm::vec4[4]>& result);
@@ -87,6 +101,8 @@ private:
 
     VkBuffer m_resultBuffer;
     VkDeviceMemory m_resultBufferMemory;
+    VkBuffer m_OutputBuffer;
+    VkDeviceMemory m_OutputBufferMemory;
 
     VkBuffer m_UniformBuffer;
     VkDeviceMemory m_UniformBufferMemory;
@@ -119,7 +135,6 @@ private:
     void submitCommandBuffer(VkCommandBuffer commandBuffer);
     void createSyncObjects();
 
-    void updateUBO();
     void createComputePipelineHelper(const std::string& path, VkPipeline& pipeline, VkPipelineLayout& pipelineLayout);
 
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);

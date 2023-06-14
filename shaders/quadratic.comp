@@ -64,6 +64,8 @@ void main()
 
         const vec2 root = vec2(-b / a, 0);
 
+        // final
+
         float real = root.x;
         real = clamp(real, 0.f, 1.f);
         const vec2 closestPoint = Bezier(real);

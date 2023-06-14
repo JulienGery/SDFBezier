@@ -21,9 +21,8 @@ const bool enableValidationLayers = true;
 
 // Buffers:
 // 0     ubo
-// 1     coef
-// 2     approximations = root = closestPoints
-// 3     ClosestPoints 
+// 1     sdf
+// 2     output
 
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
@@ -32,9 +31,7 @@ const std::vector<const char*> validationLayers = {
 
 struct UniformBufferObject
 {
-    glm::vec2 P_0, p1, p2, p3;
-    glm::vec4 bis;
-    int maxIndex, width, height, curveIndex;
+    glm::vec4 angles[400];
 };
 
 
@@ -43,6 +40,12 @@ struct PushConstant
     glm::vec2 P_0, p1, p2, p3;
     glm::vec4 bis;
     int maxIndex, width, height, curveIndex;
+};
+
+
+struct PushConstant2
+{
+    int maxIndex;
 };
 
 void coutRoots(const Roots& roots)
@@ -168,6 +171,59 @@ bool checkValidationLayerSupport() {
 void Renderer::render()
 {
     submitCommandBuffer(m_ComputeCommandBuffers[0]);
+}
+
+std::vector<OUTPUTIMAGE> Renderer::getImage()
+{
+    std::vector<OUTPUTIMAGE> result(m_Width * m_Height);
+    const size_t BufferSize = result.size() * sizeof(OUTPUTIMAGE);
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    createBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+    void* data;
+    vkMapMemory(m_Device, stagingBufferMemory, 0, BufferSize, 0, &data);
+    copyBuffer(m_OutputBuffer, stagingBuffer, BufferSize);
+    memcpy(result.data(), data, BufferSize);
+    vkUnmapMemory(m_Device, stagingBufferMemory);
+
+    vkDestroyBuffer(m_Device, stagingBuffer, nullptr);
+    vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
+
+    return result;
+}
+
+void Renderer::generateImage()
+{
+    const size_t count = m_Height * m_Width / 64 + 1;
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+    if (vkBeginCommandBuffer(m_ComputeCommandBuffers[0], &beginInfo) != VK_SUCCESS)
+        throw std::runtime_error("failed to record command buffer");
+
+
+    vkCmdBindPipeline(m_ComputeCommandBuffers[0], VK_PIPELINE_BIND_POINT_COMPUTE, m_Pipelines[2]);
+
+    // TODO Find better way than this
+    PushConstant2 pushConstant{};
+    pushConstant.maxIndex = m_Width * m_Height;
+
+    vkCmdPushConstants(m_ComputeCommandBuffers[0], m_PipelinesLayouts[2], VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(PushConstant2), &pushConstant);
+
+    vkCmdBindDescriptorSets(m_ComputeCommandBuffers[0], VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelinesLayouts[2], 0, 1, &m_ComputeDescriptorSet, 0, nullptr);
+
+    vkCmdDispatch(m_ComputeCommandBuffers[0], count, 1, 1);
+
+    if (vkEndCommandBuffer(m_ComputeCommandBuffers[0]) != VK_SUCCESS) {
+        throw std::runtime_error("failed to record compute command buffer!");
+    }
+
+
+    submitCommandBuffer(m_ComputeCommandBuffers[0]);
+
 }
 
 void Renderer::initVulkan()
@@ -303,7 +359,7 @@ void Renderer::createLogicalDevice()
 
 void Renderer::createComputeDescriptorSetLayout()
 {
-    std::array<VkDescriptorSetLayoutBinding, 2> layoutBindings{};
+    std::array<VkDescriptorSetLayoutBinding, 3> layoutBindings{};
     layoutBindings[0].binding = 0;
     layoutBindings[0].descriptorCount = 1;
     layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -316,21 +372,15 @@ void Renderer::createComputeDescriptorSetLayout()
     layoutBindings[1].pImmutableSamplers = nullptr;
     layoutBindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
-    //layoutBindings[2].binding = 2;
-    //layoutBindings[2].descriptorCount = 1;
-    //layoutBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    //layoutBindings[2].pImmutableSamplers = nullptr;
-    //layoutBindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-    //layoutBindings[3].binding = 3;
-    //layoutBindings[3].descriptorCount = 1;
-    //layoutBindings[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    //layoutBindings[3].pImmutableSamplers = nullptr;
-    //layoutBindings[3].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+    layoutBindings[2].binding = 2;
+    layoutBindings[2].descriptorCount = 1;
+    layoutBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    layoutBindings[2].pImmutableSamplers = nullptr;
+    layoutBindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = 2;
+    layoutInfo.bindingCount = 3;
     layoutInfo.pBindings = layoutBindings.data();
 
     if (vkCreateDescriptorSetLayout(m_Device, &layoutInfo, nullptr, &m_ComputeDescriptorSetLayout) != VK_SUCCESS) {
@@ -385,8 +435,9 @@ void Renderer::createComputePipeline()
 {   
     const std::vector<std::string> shaders =
     {
-        "../shaders/case2.spv",
-        "../shaders/case3.spv"
+        "../shaders/quadratic.spv",
+        "../shaders/cubic.spv",
+        "../shaders/tmp.spv"
     };
     /*{
         "../shaders/out/buildCoef2.spv",
@@ -468,6 +519,7 @@ void Renderer::createShaderStorageBuffers()
 {
     VkDeviceSize bufferSize = m_Width * m_Height;
     createBuffer(bufferSize * sizeof(glm::vec4), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_resultBuffer, m_resultBufferMemory);
+    createBuffer(bufferSize * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_OutputBuffer, m_OutputBufferMemory);
 }
 
 void Renderer::createUniformBuffers()
@@ -486,7 +538,7 @@ void Renderer::createDescriptorPool()
     poolSizes[0].descriptorCount = static_cast<uint32_t>(1);
 
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    poolSizes[1].descriptorCount = static_cast<uint32_t>(1);
+    poolSizes[1].descriptorCount = static_cast<uint32_t>(2);
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -517,7 +569,7 @@ void Renderer::createComputeDescriptorSets()
     uniformBufferInfo.offset = 0;
     uniformBufferInfo.range = sizeof(UniformBufferObject);
 
-    std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+    std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
     descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     descriptorWrites[0].dstSet = m_ComputeDescriptorSet;
     descriptorWrites[0].dstBinding = 0;
@@ -538,8 +590,21 @@ void Renderer::createComputeDescriptorSets()
     descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     descriptorWrites[1].descriptorCount = 1;
     descriptorWrites[1].pBufferInfo = &result;
-    
-    vkUpdateDescriptorSets(m_Device, 2, descriptorWrites.data(), 0, nullptr);
+
+    VkDescriptorBufferInfo output{};
+    output.buffer = m_OutputBuffer;
+    output.offset = 0;
+    output.range = sizeof(uint32_t) * m_Width * m_Height;
+
+    descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrites[2].dstSet = m_ComputeDescriptorSet;
+    descriptorWrites[2].dstBinding = 2;
+    descriptorWrites[2].dstArrayElement = 0;
+    descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    descriptorWrites[2].descriptorCount = 1;
+    descriptorWrites[2].pBufferInfo = &output;
+
+    vkUpdateDescriptorSets(m_Device, 3, descriptorWrites.data(), 0, nullptr);
 }
 
 void Renderer::createComputeCommandBuffers()
@@ -656,6 +721,8 @@ void Renderer::cleanup()
     vkFreeMemory(m_Device, m_UniformBufferMemory, nullptr);
     vkDestroyBuffer(m_Device, m_resultBuffer, nullptr);
     vkFreeMemory(m_Device, m_resultBufferMemory, nullptr);
+    vkDestroyBuffer(m_Device, m_OutputBuffer, nullptr);
+    vkFreeMemory(m_Device, m_OutputBufferMemory, nullptr);
 
     vkDestroyDescriptorPool(m_Device, m_DescriptorPool, nullptr);
     vkDestroyDescriptorSetLayout(m_Device, m_ComputeDescriptorSetLayout, nullptr);
@@ -742,19 +809,13 @@ void Renderer::createSyncObjects()
         throw std::runtime_error("failed to create fence\n");
 }
 
-void Renderer::updateUBO()
+void Renderer::updateUBO(const std::vector<float>& angles)
 {
     UniformBufferObject ubo{};
-    ubo.P_0 = P_0;
-    ubo.p1 = p1;
-    ubo.p2 = p2;
-    ubo.p3 = p3;
-    ubo.width = m_Width;
-    ubo.height = m_Height;
-    ubo.maxIndex = m_Width * m_Height;
-    ubo.curveIndex = m_CurveIndex;
-    ubo.bis = m_Bis;
-
+    
+    for (size_t i = 0; i < angles.size(); i++)
+        ubo.angles[i].x = angles[i];
+    
     memcpy(m_UniformBufferMapped, &ubo, sizeof(ubo));
 }
 

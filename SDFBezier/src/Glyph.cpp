@@ -13,6 +13,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include <iostream>
 
 bool right(const glm::vec2& d, const glm::vec2& v)
 {
@@ -142,18 +143,26 @@ glm::mat2 rotationMatrix(const float o)
 glm::vec2 bisector(const glm::vec2 a, const glm::vec2 b)
 {
     const glm::vec2 x = glm::normalize(a);
-    const glm::vec2 y = glm::normalize(b);
 
-    const std::complex<float> zx{ a.x, a.y };
-    const std::complex<float> zy{ y.x, y.y };
+    const std::complex<double> zx{ a.x, a.y };
+    const std::complex<double> zy{ b.x, b.y };
 
     float o = std::arg(zy / zx) / 2.0;
+    
     if (o > 0.)
         o -= M_PI;
 
     const auto matrix = rotationMatrix(o);
 
     return matrix * x;
+}
+
+float getAngle(const glm::vec2 a, const glm::vec2 b)
+{
+    const glm::vec2 x = glm::normalize(a);
+    const glm::vec2 y = glm::normalize(b);
+
+    return glm::dot(x, y);
 }
 
 
@@ -168,6 +177,8 @@ void Glyph::generateBisectors()
             -m_Curves[end].getDerivateEnd(), m_Curves[start].getStartDerivate()
         );
 
+        m_Angles.push_back(getAngle(-m_Curves[end].getDerivateEnd(), m_Curves[start].getStartDerivate()));
+
         for (size_t i = start; i < end; i++)
         {
             const glm::vec2 endAngle = bisector(
@@ -176,11 +187,16 @@ void Glyph::generateBisectors()
 
             m_Bisectors[i] = { startAngle, endAngle };
             startAngle = endAngle;
+
+            m_Angles.push_back(getAngle(startAngle, endAngle));
         }
+
 
         const glm::vec2 endAngle = bisector(
             -m_Curves[end].getDerivateEnd(), m_Curves[start].getStartDerivate()
         );
+
+        m_Angles.push_back(getAngle( - m_Curves[end].getDerivateEnd(), m_Curves[start].getStartDerivate()));
 
         m_Bisectors[end] = { startAngle, endAngle };
         start = end + 1;

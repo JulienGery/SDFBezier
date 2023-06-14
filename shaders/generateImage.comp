@@ -1,56 +1,58 @@
 #version 450
 
-layout ( std140, binding = 0 ) uniform constants
+#define PI 3.14159265358979323846264338327950288419716939937510
+
+
+layout ( push_constant) uniform constants
 {
     uint maxIndex;
 } pushConstants;
 
-layout (std140, binding = 1) readonly buffer UBO 
+layout (std140, binding = 0) readonly uniform UBO 
 {
-    vec4 angles[ ];
+    vec4 angles[400];
 };
 
-layout (std140, binding = 2) readonly buffer Image
+layout (std140, binding = 1) readonly buffer Image
 {
-    vec4 result[ ];
+    vec4 SDF[ ];
     //layout: distance, inside, root, curveIndex
 };
 
-layout (std140, binding = 3) writeonly buffer OUTIMAGE
+layout (std140, binding = 2) writeonly buffer OUTIMAGE
 {
     uint image[ ];
 };
 
+uint CustomMix(const in uint a, const in uint b, const in float c)
+{
+    const uint delta = b - a;
+    if(c > 1.0)
+        return b;
+    return a + uint(delta * c);
+}
+
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
 void main()
-{
+{ 
     uint index = gl_GlobalInvocationID.x;
+    const int CurvesCount = 43;
     if(index < pushConstants.maxIndex)
     {
-        vec4 pixel = result[index];
+        uint curveIndex = uint(SDF[index].w);
+        const float root = SDF[index].z;
 
-        uint curveIndex = uint(pixel.w);
-        uint angleIndex;
-        
-        if(pixel.z < 0.5)
-            angleIndex = curveIndex;
+        if(root >= 0.5)
+            curveIndex = (curveIndex + 1) %CurvesCount;
+
+        // const uint color = CustomMix(0xff0000ff, 0xffff0000, float(curveIndex) / float(CurvesCount));
+        const bool angle = bool(angles[curveIndex].x);
+        uint color;
+        if (angle)
+            color = 0xff0000ff;
         else
-            angleIndex = curveIndex + 1;
-
-        const uint subAngleIndex = angleIndex % 4;
-        const uint GroupeAngleIndex = (angleIndex - subAngleIndex) / 4;
-
-        float angle;
-        if(subAngleIndex == 0)
-            angle = angles[GroupeAngleIndex].x;
-        else if(subAngleIndex == 1)
-            angle = angles[GroupeAngleIndex].y;
-        else if(subAngleIndex == 2)
-            angle = angles[GroupeAngleIndex].z;
-        else
-            angle = angles[GroupeAngleIndex].w;
-
-        bool inAngle
+            color = 0xff00ff00;
+        image[index] = color; 
     }
 }

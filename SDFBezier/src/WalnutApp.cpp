@@ -27,7 +27,7 @@ public:
 	{
 		
 		m_ImageData = new uint32_t[700 * 700];
-		m_Image = std::make_shared<Walnut::Image>(16, 16, Walnut::ImageFormat::RGBA, m_ImageData);
+		m_Image = std::make_shared<Walnut::Image>(700, 700, Walnut::ImageFormat::RGBA, m_ImageData);
 	}
 
 	virtual void OnAttach() override
@@ -52,31 +52,39 @@ public:
 			for (size_t i = 0; i < curves.size(); i++)
 			{
 				const auto jsp = curves[i].getVectors();
-				solver.P_0 = jsp[0];
-				solver.p1 = jsp[1];
-				solver.p2 = jsp[2];
-				solver.p3 = jsp[3];
-				solver.m_Width = width;
-				solver.m_Height = height;
-				solver.m_CurveIndex = i;
-				solver.m_Bis = m_glyph.m_Bisectors[i];
+				renderer.P_0 = jsp[0];
+				renderer.p1 = jsp[1];
+				renderer.p2 = jsp[2];
+				renderer.p3 = jsp[3];
+				renderer.m_Width = width;
+				renderer.m_Height = height;
+				renderer.m_CurveIndex = i;
+				renderer.m_Bis = m_glyph.m_Bisectors[i];
 				
 				const size_t curveSize = curves[i].size();
-				solver.recordComputeCommandBuffers(curveSize);
-				solver.render();
+				renderer.recordComputeCommandBuffers(curveSize);
+				renderer.render();
 			}
 				
 		}
 
-		const std::vector<glm::vec4> result = solver.getResult();
-
-		for (size_t i = 0; i < result.size(); i++)
+		if (m_Switch == 0)
 		{
-			if (result[i].w == m_Index)
-				m_ImageData[i] = 0xff'ff'ff'ff;
-			else if (result[i].y < 0)
-				m_ImageData[i] = 0xff'00'ff'00;
-		} 
+			const std::vector<glm::vec4> result = renderer.getResult();
+
+			for (size_t i = 0; i < width * height; i++)
+				if(result[i].y < 0)
+					m_ImageData[i] = 0xff00ff00;
+		}
+		else if (m_Switch == 1)
+		{
+			renderer.updateUBO(m_glyph.m_Angles);
+			renderer.generateImage();
+			const std::vector<OUTPUTIMAGE> image = renderer.getImage();
+
+			for (size_t i = 0; i < width * height; i++)
+				m_ImageData[i] = image[i].color;
+		}
 
 		for (size_t i = m_Index; i < m_Index + 1; i++)
 		{
@@ -147,7 +155,8 @@ public:
 		//ImGui::InputFloat("px", &m_Point.x, 0.01f, 1.f, "%.2f");
 		//ImGui::InputFloat("py", &m_Point.y, 0.01f, 1.f, "%.2f");
 
-		ImGui::InputInt("render curve", &m_RenderCurve, 0, 1);
+		ImGui::InputInt("render curve", &m_RenderCurve, 1, 1);
+		ImGui::InputInt("Switch", (int*)&m_Switch, 1, 1);
 
 		ImGui::InputFloat("distance", &m_distance, 0.01f, 1.f, "%.2f");
 
@@ -164,10 +173,11 @@ private:
 	float m_distance = 2.5;
 
 	size_t m_Index = 0;
+	size_t m_Switch = 0;
 
 	Glyph m_glyph{ "..\\polices\\times.ttf", 'W' };
-
-	Renderer solver;
+	
+	Renderer renderer;
 
 };
 
