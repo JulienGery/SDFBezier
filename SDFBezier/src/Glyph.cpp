@@ -91,16 +91,16 @@ void Glyph::BuildCurves()
     {
         Bezier bezier{ {{m_Outlines.points[2 * start], m_Outlines.points[2 * start + 1]}} };
         size_t i = start;
-        bool Sbreak = true;
+        bool keepgoing = true;
         glm::vec2 previusPoint{};
 
-        while (Sbreak)
+        while (keepgoing)
         {
             i++;
             if (i > end)
             {
                 i = start;
-                Sbreak = false;
+                keepgoing = false;
             }
             
             const glm::vec2 point{ m_Outlines.points[2 * i], m_Outlines.points[2 * i + 1] };
@@ -139,7 +139,6 @@ glm::mat2 rotationMatrix(const float o)
     };
 }
 
-
 glm::vec2 bisector(const glm::vec2 a, const glm::vec2 b)
 {
     const glm::vec2 x = glm::normalize(a);
@@ -157,48 +156,35 @@ glm::vec2 bisector(const glm::vec2 a, const glm::vec2 b)
     return matrix * x;
 }
 
-float getAngle(const glm::vec2 a, const glm::vec2 b)
-{
-    const glm::vec2 x = glm::normalize(a);
-    const glm::vec2 y = glm::normalize(b);
-
-    return glm::dot(x, y);
-}
-
-
 void Glyph::generateBisectors()
 {
     m_Bisectors.resize(m_Curves.size());
-    
+
     uint16_t start = 0;
     for (const auto& end : m_Split)
     {
-        glm::vec2 startAngle = bisector(
+        glm::vec2 startBisector = bisector(
             -m_Curves[end].getDerivateEnd(), m_Curves[start].getStartDerivate()
         );
 
-        m_Angles.push_back(getAngle(-m_Curves[end].getDerivateEnd(), m_Curves[start].getStartDerivate()));
-
         for (size_t i = start; i < end; i++)
         {
-            const glm::vec2 endAngle = bisector(
+            const glm::vec2 endBisector = bisector(
                 -m_Curves[i].getDerivateEnd(), m_Curves[i + 1].getStartDerivate()
             );
 
-            m_Bisectors[i] = { startAngle, endAngle };
-            startAngle = endAngle;
-
-            m_Angles.push_back(getAngle(startAngle, endAngle));
+            m_Bisectors[i] = { startBisector, endBisector };
+            startBisector = endBisector;
         }
-
 
         const glm::vec2 endAngle = bisector(
             -m_Curves[end].getDerivateEnd(), m_Curves[start].getStartDerivate()
         );
 
-        m_Angles.push_back(getAngle( - m_Curves[end].getDerivateEnd(), m_Curves[start].getStartDerivate()));
-
-        m_Bisectors[end] = { startAngle, endAngle };
+        m_Bisectors[end] = { startBisector, endAngle };
         start = end + 1;
     }
+
+    for (const auto& curve : m_Curves)
+        std::cout << curve.getDerivateEnd().x << ' ' << curve.getDerivateEnd().y << '\n';
 }

@@ -435,8 +435,8 @@ void Renderer::createComputePipeline()
 {   
     const std::vector<std::string> shaders =
     {
+        "../shaders/linear.spv",
         "../shaders/quadratic.spv",
-        "../shaders/cubic.spv",
         "../shaders/tmp.spv"
     };
     /*{

@@ -47,9 +47,9 @@ void main()
             curveIndex = (curveIndex + 1) %CurvesCount;
 
         // const uint color = CustomMix(0xff0000ff, 0xffff0000, float(curveIndex) / float(CurvesCount));
-        const bool angle = bool(angles[curveIndex].x);
+        const float angle = angles[curveIndex].x;
         uint color;
-        if (angle)
+        if (angle > PI/2.0)
             color = 0xff0000ff;
         else
             color = 0xff00ff00;

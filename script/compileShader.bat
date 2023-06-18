@@ -1,3 +1,5 @@
-glslc.exe ../shaders/case2.comp -O -o ../shaders/case2.spv
-glslc.exe ../shaders/case3.comp -O -o ../shaders/case3.spv
+glslc.exe ../shaders/linear.comp -O -o ../shaders/linear.spv
+glslc.exe ../shaders/quadratic.comp -O -o ../shaders/quadratic.spv
+glslc.exe ../shaders/generateImage.comp -O -o ../shaders/tmp.spv
+
 pause

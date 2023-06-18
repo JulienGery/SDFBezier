@@ -175,7 +175,7 @@ private:
 	size_t m_Index = 0;
 	size_t m_Switch = 0;
 
-	Glyph m_glyph{ "..\\polices\\times.ttf", 'W' };
+	Glyph m_glyph{ "..\\polices\\times.ttf", 'U' };
 	
 	Renderer renderer;
 

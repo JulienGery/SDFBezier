@@ -1,0 +1,39 @@
+#version 450
+
+
+layout ( push_constant ) uniform constants
+{
+    uint maxIndex;
+    uint width;
+    uint dotCount;
+    float radius; //squared
+} PushConstants;
+
+layout (std140, binding = 0) readonly uniform UBO 
+{
+    vec2 dots[400];
+};
+
+float distanceSquared(const vec2 a, const vec2 b)
+{
+    const vec2 tmp = a - b;
+    return dot(tmp, tmp);
+}
+
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+    const uint index = gl_GlobalInvocationID.x;
+    if(index < PushConstants.maxIndex)
+    {
+        const uint x = index%PushConstants.width;
+        const uint y = (index - x) / PushConstants.width;
+        const vec2 location = vec2(x, y);
+        for(uint i = 0; i < PushConstants.dotCount; i++)
+            if(distanceSquared(location, dots[i]) <= PushConstants.radius)
+            {
+                //where to write ?? straight to SDF ?
+            }           
+    }
+}
