@@ -169,7 +169,6 @@ bool checkValidationLayerSupport() {
 //    submitCommandBuffer(m_ComputeCommandBuffers[0]);
 //}
 
-// not working when changing start resolution for some reason
 std::vector<OUTPUTIMAGE> Renderer::getImage()
 {
     std::vector<OUTPUTIMAGE> result(m_Width * m_Height);
@@ -554,7 +553,7 @@ void Renderer::createComputeDescriptorSets()
     VkDescriptorBufferInfo output{};
     output.buffer = m_OutputBuffer;
     output.offset = 0;
-    output.range = sizeof(uint32_t) * m_Width * m_Height;
+    output.range = sizeof(OUTPUTIMAGE) * m_Width * m_Height;
 
     descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     descriptorWrites[2].dstSet = m_ComputeDescriptorSet;

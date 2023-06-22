@@ -40,9 +40,6 @@ public:
 		const uint32_t width = m_Image->GetWidth();
 		const uint32_t height = m_Image->GetHeight();
 
-
-		std::cout << width << ' ' << height << '\n';
-
 		if (!m_RenderCurve) return;
 
 		for (size_t i = 0; i < width * height; i++)
