@@ -12,7 +12,7 @@
 #include <Walnut/Timer.h>
 #include <string>
 
-//#define NDEBUG 1
+#define NDEBUG 1
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
 #else
@@ -31,19 +31,15 @@ const std::vector<const char*> validationLayers = {
 
 struct UniformBufferObject
 {
-    glm::vec4 angles[400];
+    glm::vec4 angles[100];
 };
 
-
-struct PushConstant
+struct PushConstantGenerateSDF
 {
-    glm::vec2 P_0, p1, p2, p3;
-    glm::vec4 bis;
-    int maxIndex, width, height, curveIndex;
+    uint32_t CurvesCount, ScreenResolution, width, height;
 };
 
-
-struct PushConstant2
+struct PushConstantGenrateImage
 {
     int maxIndex;
 };
@@ -168,60 +164,47 @@ bool checkValidationLayerSupport() {
     return true;
 }
 
-void Renderer::render()
-{
-    submitCommandBuffer(m_ComputeCommandBuffers[0]);
-}
+//void Renderer::render()
+//{
+//    submitCommandBuffer(m_ComputeCommandBuffers[0]);
+//}
 
+// not working when changing start resolution for some reason
 std::vector<OUTPUTIMAGE> Renderer::getImage()
 {
     std::vector<OUTPUTIMAGE> result(m_Width * m_Height);
-    const size_t BufferSize = result.size() * sizeof(OUTPUTIMAGE);
-
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    createBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-    void* data;
-    vkMapMemory(m_Device, stagingBufferMemory, 0, BufferSize, 0, &data);
-    copyBuffer(m_OutputBuffer, stagingBuffer, BufferSize);
-    memcpy(result.data(), data, BufferSize);
-    vkUnmapMemory(m_Device, stagingBufferMemory);
-
-    vkDestroyBuffer(m_Device, stagingBuffer, nullptr);
-    vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
+    const size_t bufferSize = result.size() * sizeof(OUTPUTIMAGE);
+    getBuffferContent(m_OutputBuffer, bufferSize, result.data());
 
     return result;
 }
 
 void Renderer::generateImage()
 {
-    const size_t count = m_Height * m_Width / 64 + 1;
+    const size_t count = m_Width * m_Height / 64 + 1;
 
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    PushConstantGenrateImage pushConstant{};
+    pushConstant.maxIndex = m_Height * m_Width;
 
-    if (vkBeginCommandBuffer(m_ComputeCommandBuffers[0], &beginInfo) != VK_SUCCESS)
-        throw std::runtime_error("failed to record command buffer");
+    recordComputeCommandBuffer(m_ComputeCommandBuffers[1], m_Pipelines[1], m_PipelinesLayouts[1], count, pushConstant);
+    
+    submitCommandBuffer(m_ComputeCommandBuffers[1]);
+}
 
+void Renderer::renderSDF(const size_t width, const size_t height, const uint32_t curvesCount)
+{
+    m_Height = height;
+    m_Width = width;
 
-    vkCmdBindPipeline(m_ComputeCommandBuffers[0], VK_PIPELINE_BIND_POINT_COMPUTE, m_Pipelines[2]);
+    PushConstantGenerateSDF pushConstant{};
+    pushConstant.height = m_Height;
+    pushConstant.width = m_Width;
+    pushConstant.ScreenResolution = m_Width * m_Height;
+    pushConstant.CurvesCount = curvesCount;
 
-    // TODO Find better way than this
-    PushConstant2 pushConstant{};
-    pushConstant.maxIndex = m_Width * m_Height;
-
-    vkCmdPushConstants(m_ComputeCommandBuffers[0], m_PipelinesLayouts[2], VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(PushConstant2), &pushConstant);
-
-    vkCmdBindDescriptorSets(m_ComputeCommandBuffers[0], VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelinesLayouts[2], 0, 1, &m_ComputeDescriptorSet, 0, nullptr);
-
-    vkCmdDispatch(m_ComputeCommandBuffers[0], count, 1, 1);
-
-    if (vkEndCommandBuffer(m_ComputeCommandBuffers[0]) != VK_SUCCESS) {
-        throw std::runtime_error("failed to record compute command buffer!");
-    }
-
-
+    const size_t count = m_Width * m_Height / 64 + 1;
+    
+    recordComputeCommandBuffer(m_ComputeCommandBuffers[0], m_Pipelines[0], m_PipelinesLayouts[0], count, pushConstant);
     submitCommandBuffer(m_ComputeCommandBuffers[0]);
 
 }
@@ -388,6 +371,7 @@ void Renderer::createComputeDescriptorSetLayout()
     }
 }
 
+template <class PushConstantStruct>
 void Renderer::createComputePipelineHelper(const std::string& path, VkPipeline& pipeline, VkPipelineLayout& pipelineLayout)
 {
     auto computeShaderCode = readFile(path);
@@ -402,7 +386,7 @@ void Renderer::createComputePipelineHelper(const std::string& path, VkPipeline& 
 
     VkPushConstantRange pushConstant;
     pushConstant.offset = 0;
-    pushConstant.size = sizeof(PushConstant);
+    pushConstant.size = sizeof(PushConstantStruct);
     pushConstant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
     // TODO switch to push constants
@@ -431,54 +415,30 @@ void Renderer::createComputePipelineHelper(const std::string& path, VkPipeline& 
     vkDestroyShaderModule(m_Device, computeShaderModule, nullptr);
 }
 
+
 void Renderer::createComputePipeline()
 {   
     const std::vector<std::string> shaders =
     {
-        "../shaders/linear.spv",
-        "../shaders/quadratic.spv",
+        "../shaders/TestBezier.spv",
         "../shaders/tmp.spv"
     };
-    /*{
-        "../shaders/out/buildCoef2.spv",
-        "../shaders/out/solve2.spv",
-        "../shaders/out/final2.spv",
-
-        "../shaders/out/buildCoef3.spv",
-        "../shaders/out/init3.spv",
-        "../shaders/out/solve3.spv",
-        "../shaders/out/final3.spv",
-
-        "../shaders/out/buildCoef4.spv",
-        "../shaders/out/init4.spv",
-        "../shaders/out/solve4.spv",
-        "../shaders/out/final4.spv"
-    };*/
 
     m_Pipelines.resize(shaders.size());
     m_PipelinesLayouts.resize(shaders.size());
 
-    for (size_t i = 0; i < shaders.size(); i++)
-        createComputePipelineHelper(shaders[i], m_Pipelines[i], m_PipelinesLayouts[i]);
+    //TODO find a more scalable way
+
+    createComputePipelineHelper<PushConstantGenerateSDF>(shaders[0], m_Pipelines[0], m_PipelinesLayouts[0]);
+    createComputePipelineHelper<PushConstantGenrateImage>(shaders[1], m_Pipelines[1], m_PipelinesLayouts[1]);
 }
 
 std::vector<glm::vec4> Renderer::getResult()
 {
     std::vector<glm::vec4> result(m_Width * m_Height);
-    const size_t BufferSize = result.size() * sizeof(glm::vec4);
+    const size_t bufferSize = result.size() * sizeof(glm::vec4);
 
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    createBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-    void* data;
-    vkMapMemory(m_Device, stagingBufferMemory, 0, BufferSize, 0, &data);
-    copyBuffer(m_resultBuffer, stagingBuffer, BufferSize);
-    memcpy(result.data(), data, BufferSize);
-    vkUnmapMemory(m_Device, stagingBufferMemory);
-
-    vkDestroyBuffer(m_Device, stagingBuffer, nullptr);
-    vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
+    getBuffferContent(m_resultBuffer, bufferSize, result.data());
 
     return result;
 }
@@ -519,12 +479,12 @@ void Renderer::createShaderStorageBuffers()
 {
     VkDeviceSize bufferSize = m_Width * m_Height;
     createBuffer(bufferSize * sizeof(glm::vec4), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_resultBuffer, m_resultBufferMemory);
-    createBuffer(bufferSize * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_OutputBuffer, m_OutputBufferMemory);
+    createBuffer(bufferSize * sizeof(OUTPUTIMAGE), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_OutputBuffer, m_OutputBufferMemory);
 }
 
 void Renderer::createUniformBuffers()
 {
-    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+    VkDeviceSize bufferSize = sizeof(CurvesData) * 100;
 
     createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_UniformBuffer, m_UniformBufferMemory);
 
@@ -567,7 +527,7 @@ void Renderer::createComputeDescriptorSets()
     VkDescriptorBufferInfo uniformBufferInfo{};
     uniformBufferInfo.buffer = m_UniformBuffer;
     uniformBufferInfo.offset = 0;
-    uniformBufferInfo.range = sizeof(UniformBufferObject);
+    uniformBufferInfo.range = sizeof(CurvesData) * 100;
 
     std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
     descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -613,8 +573,8 @@ void Renderer::createComputeCommandBuffers()
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = m_CommandPool;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = (uint32_t)1;
-    m_ComputeCommandBuffers.resize(1);
+    allocInfo.commandBufferCount = (uint32_t)2;
+    m_ComputeCommandBuffers.resize(2);
 
     if (vkAllocateCommandBuffers(m_Device, &allocInfo, m_ComputeCommandBuffers.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate compute command buffers!");
@@ -675,6 +635,22 @@ void Renderer::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemor
     vkBindBufferMemory(m_Device, buffer, bufferMemory, 0);
 }
 
+void Renderer::getBuffferContent(const VkBuffer buffer, const size_t bufferSize, void* dst)
+{
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+    void* data;
+    vkMapMemory(m_Device, stagingBufferMemory, 0, bufferSize, 0, &data);
+    copyBuffer(buffer, stagingBuffer, bufferSize);
+    memcpy(dst, data, bufferSize);
+    vkUnmapMemory(m_Device, stagingBufferMemory);
+
+    vkDestroyBuffer(m_Device, stagingBuffer, nullptr);
+    vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
+}
+
 
 void Renderer::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
     VkCommandBufferAllocateInfo allocInfo{};
@@ -716,7 +692,7 @@ void Renderer::cleanup()
         vkDestroyPipeline(m_Device, m_Pipelines[i], nullptr);
         vkDestroyPipelineLayout(m_Device, m_PipelinesLayouts[i], nullptr);
     }
-    
+
     vkDestroyBuffer(m_Device, m_UniformBuffer, nullptr);
     vkFreeMemory(m_Device, m_UniformBufferMemory, nullptr);
     vkDestroyBuffer(m_Device, m_resultBuffer, nullptr);
@@ -738,8 +714,8 @@ void Renderer::cleanup()
 }
 
 
-
-void Renderer::recordComputeCommandBuffer(VkCommandBuffer commandBuffer, VkPipeline pipeline, VkPipelineLayout pipelineLayout, const size_t count)
+template <class PushConstantStruct>
+void Renderer::recordComputeCommandBuffer(VkCommandBuffer commandBuffer, VkPipeline pipeline, VkPipelineLayout pipelineLayout, const size_t count, const PushConstantStruct pushConstant)
 {
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -747,22 +723,9 @@ void Renderer::recordComputeCommandBuffer(VkCommandBuffer commandBuffer, VkPipel
     if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
         throw std::runtime_error("failed to record command buffer");
 
-
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 
-    // TODO Find better way than this
-    PushConstant pushConstant{};
-    pushConstant.P_0 = P_0;
-    pushConstant.p1 = p1;
-    pushConstant.p2 = p2;
-    pushConstant.p3 = p3;
-    pushConstant.width = m_Width;
-    pushConstant.height = m_Height;
-    pushConstant.maxIndex = m_Width * m_Height;
-    pushConstant.curveIndex = m_CurveIndex;
-    pushConstant.bis = m_Bis;
-
-    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(PushConstant), &pushConstant);
+    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(PushConstantStruct), &pushConstant);
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &m_ComputeDescriptorSet, 0, nullptr);
     
@@ -773,13 +736,13 @@ void Renderer::recordComputeCommandBuffer(VkCommandBuffer commandBuffer, VkPipel
     }
 }
 
-void Renderer::recordComputeCommandBuffers(const size_t curveSize)
-{
-    for (size_t i = 0; i < m_ComputeCommandBuffers.size(); i++)
-        vkResetCommandBuffer(m_ComputeCommandBuffers[i], 0);
-
-    recordComputeCommandBuffer(m_ComputeCommandBuffers[0], m_Pipelines[curveSize - 2], m_PipelinesLayouts[curveSize - 2], m_Width * m_Height / 64 + 1);
-}
+//void Renderer::recordComputeCommandBuffers(const size_t curveSize)
+//{
+//    for (size_t i = 0; i < m_ComputeCommandBuffers.size(); i++)
+//        vkResetCommandBuffer(m_ComputeCommandBuffers[i], 0);
+//
+//    recordComputeCommandBuffer(m_ComputeCommandBuffers[0], m_Pipelines[curveSize - 2], m_PipelinesLayouts[curveSize - 2], m_Width * m_Height / 64 + 1);
+//}
 
 void Renderer::submitCommandBuffer(VkCommandBuffer commandBuffer)
 {
@@ -809,6 +772,7 @@ void Renderer::createSyncObjects()
         throw std::runtime_error("failed to create fence\n");
 }
 
+
 void Renderer::updateUBO(const std::vector<float>& angles)
 {
     UniformBufferObject ubo{};
@@ -817,6 +781,11 @@ void Renderer::updateUBO(const std::vector<float>& angles)
         ubo.angles[i].x = angles[i];
     
     memcpy(m_UniformBufferMapped, &ubo, sizeof(ubo));
+}
+
+void Renderer::updateUBO(const std::vector<CurvesData>& curvesData)
+{
+    memcpy(m_UniformBufferMapped, curvesData.data(), curvesData.size() *  sizeof(CurvesData));
 }
 
 

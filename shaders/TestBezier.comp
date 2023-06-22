@@ -1,0 +1,330 @@
+#version 450
+
+#define EPSILON 1e-05
+#define MAXITERATION 200
+#define PI 3.14159265358979323846264338327950288419716939937510
+
+struct CurvesData
+{
+    uint PointsCount;
+    vec4 bisector;
+    vec2 P_0, p1, p2, p3;
+};
+
+layout ( push_constant ) uniform constants
+{
+    uint CurvesCount, ScreenResolution, width, height;
+} PushConstants;
+
+layout (std140, binding = 0) readonly uniform UBO 
+{
+    CurvesData TMP[100];
+};
+
+layout (std140, binding = 1) writeonly buffer IMAGEOUT
+{
+    vec4 result[ ];
+} OUTPUT;
+
+vec3 linear(const vec2 point, const CurvesData curve);
+
+vec3 quadratic(const vec2 point, const CurvesData curve);
+
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+    const uint index = gl_GlobalInvocationID.x;
+    if(index < PushConstants.ScreenResolution)
+    {
+        const float x = index % PushConstants.width;
+        const float y = (index - x) / float(PushConstants.width);
+        const vec2 point = vec2(x, y);
+
+        vec4 result = vec4(3.402823466E+38, 0, 0, 0);
+        for(uint i = 0; i < PushConstants.CurvesCount; i++)
+        {
+            CurvesData curve = TMP[i];
+
+            vec3 candidate;
+            if(curve.PointsCount == 2)
+                candidate = linear(point, curve);
+            else if (curve.PointsCount == 3)
+                candidate = quadratic(point, curve);
+
+            if(candidate.x < result.x)
+                result = vec4(candidate, i);
+        }
+        OUTPUT.result[index] = result;
+    }
+}
+
+vec2 DBezier(const CurvesData curve)
+{
+    return curve.p1;
+}
+
+vec2 Bezier(const float t, const CurvesData curve)
+{
+    return curve.P_0 +
+            t * curve.p1;
+}
+
+float crossN(const vec2 d, const vec2 v)
+{
+    return d.x * v.y - d.y * v.x;
+}
+
+float crossZ(const vec2 d, const vec2 v)
+{
+    const vec2 a = normalize(d); 
+    const vec2 b = normalize(v);
+    return (a.x * b.y - a.y * b.x);
+}
+
+vec3 linear(const vec2 point, const CurvesData curve)
+{
+    if(! (crossN(curve.bisector.xy, point - Bezier(0., curve)) <= 0. && crossN(curve.bisector.zw, point - Bezier(1., curve)) >= 0.))
+        return vec3(3.402823466E+38, 0, 0);          
+
+    const vec2 p = point - curve.P_0;
+
+    const float a = dot(curve.p1, curve.p1);
+    const float b = -dot(curve.p1, p);
+
+    const vec2 root = vec2(-b / a, 0);
+
+    float real = root.x;
+    real = clamp(real, 0.f, 1.f);
+    const vec2 closestPoint = Bezier(real, curve);
+
+    const float dis = distance(closestPoint, point);
+    const float inside = crossZ(DBezier(curve), point - closestPoint);
+
+    return vec3(dis, inside, real);
+}
+
+
+vec2 quadraticBezier(const float t, const CurvesData curve)
+{
+    return curve.P_0 +
+    2.f * t * curve.p1 +
+    t * t * curve.p2;
+}
+
+vec2 quadraticDBezier(const float t, const CurvesData curve)
+{
+    return 2.f * curve.p1 +
+		    2.f * t * curve.p2;
+}
+
+vec2 complexSQRT(const float x)
+{
+    if(x < 0)
+        return vec2(0, sqrt(abs(x)));
+    return vec2(sqrt(x), 0);
+}
+
+vec2 mul(const vec2 z, const vec2 zp) // complex multiplication
+{
+    vec2 result;
+    result.x = z.x * zp.x - z.y * zp.y;
+    result.y = z.y * zp.x + z.x * zp.y;
+    return result;
+}
+
+vec2 div(const vec2 z, const vec2 zp) // complex division
+{
+    float bottom = zp.x * zp.x + zp.y * zp.y;
+    vec2 result = mul(z, vec2(zp.x, -zp.y));
+
+    return result / bottom;
+}
+
+vec2 div(const float x, const vec2 zp)
+{
+    float bottom = zp.x * zp.x + zp.y * zp.y;
+    return float(x) * vec2(zp.x, -zp.y) / bottom;
+}
+
+vec2 complexEXP(const float o)
+{
+    return vec2(cos(o), sin(o));
+}
+
+vec2[3] startingPoints(const in vec2[4] coefficients)
+{
+    vec2 a_3 = coefficients[3];
+    vec2 a_0 = coefficients[0];
+
+    float offset = PI / (2.0 * 3.0);
+    float angle = 2.0 * PI / 3.0;
+
+    bool radiusZero = false;
+    float radius;
+    
+    if(a_0.x == 0 && a_0.y == 0)
+    {
+        radius = pow(length(div(coefficients[1], a_3)), 0.5);
+        angle = PI;
+        offset = PI / (2.0 * 2.0);
+        radiusZero = true;
+    }
+    else 
+        radius = pow(length(div(a_0, a_3)), 1./3.);
+    
+    vec2[3] roots;
+
+    for(uint i = 0; i < 3; i++)
+        roots[i] = radius * complexEXP(i * angle + offset);
+
+    if(radiusZero)
+        roots[0] = vec2(0);
+    
+    return roots;
+}
+
+vec2 f(const vec2 z, const in vec2[4] coeff) // compute polynom at z
+{
+    vec2 tmp = vec2(1, 0);
+    vec2 result = coeff[0];
+    for(uint i = 1; i < 4; i++)
+    {
+        tmp = mul(tmp, z);
+        result += mul(coeff[i], tmp);
+    }
+    return result;
+}
+
+vec2 fp(const vec2 z, const in vec2[4] coeff) // compute derivate at z.
+{
+    vec2 tmp = vec2(1, 0);
+    vec2 result = coeff[1];
+    for(uint i = 2; i < 4; i++)
+    {
+        tmp = mul(tmp, z);
+        result += mul(coeff[i] * float(i), tmp);
+    }
+    return result;
+}
+
+vec2 sumOfApproximation(const uint index, const in vec2[3] values)
+{
+    vec2 result = vec2(0);
+    for(uint j = 0; j < 3; j++)
+        if (j != index)
+            result += div(vec2(1, 0), values[index] - values[j]) ;
+    return result;
+}
+
+vec2[3] Aberth(const in vec2[4] coefficients)
+{
+    vec2[3] roots = startingPoints(coefficients);
+
+    for(uint i = 0; i < MAXITERATION; i++)
+    {
+        const vec2[3] currentApproximation = roots;
+        uint finish = 0;
+
+        for(uint k = 0; k < 3; k++)
+        {
+            const vec2 z = currentApproximation[k];
+            const vec2 p = f(z, coefficients);
+            const vec2 pp = fp(z, coefficients);
+
+            const vec2 POverPP = div(p, pp);
+            const vec2 sum = sumOfApproximation(k, currentApproximation);
+            const vec2 zPlusOne = z - div(POverPP, vec2(1, 0) - mul(POverPP, sum));
+
+            roots[k] = zPlusOne;
+            if(distance(z, zPlusOne) < EPSILON)
+                finish++;
+        }
+
+        if(finish == 3)
+            break;
+    }
+
+    return roots;
+}
+
+vec3 quadratic(const vec2 point, const CurvesData curve)
+{
+    if(!(crossN(curve.bisector.xy, point - quadraticBezier(0., curve)) <= 0. && crossN(curve.bisector.zw, point - quadraticBezier(1., curve)) >= 0.))
+        return vec3(3.402823466E+38, 0, 0);
+
+    const vec2 p = point - curve.P_0;
+
+    vec2[4] coefficients;
+
+    {
+
+        const float a = dot(curve.p2, curve.p2);
+        const float b = 3.0 * dot(curve.p1, curve.p2);
+        const float c = 2.0 * dot(curve.p1, curve.p1) - dot(curve.p2, p);
+        const float d = -dot(curve.p1, p);
+
+        coefficients[0] = vec2(d, 0);
+        coefficients[1] = vec2(c, 0);
+        coefficients[2] = vec2(b, 0);
+        coefficients[3] = vec2(a, 0);
+    }
+
+    float a = coefficients[3].x;
+    float b = coefficients[2].x;
+    float c = coefficients[1].x;
+    float d = coefficients[0].x;
+
+    b /= a;        
+    c /= a;
+    d /= a;
+    a = 1;
+
+    const float s = (3.0 * c - b * b) / 3.0;
+    const float q = (9.0 * c * b - 27.0 * d - 2. * b * b * b) / 27.0;
+
+    const float R = q / 2.0;
+    const float Q = s / 3.0;
+
+    vec2[3] roots;
+    vec2 w3 = vec2(R, 0) + complexSQRT(R * R + Q * Q * Q);
+
+    if(abs(w3.x) < EPSILON*1e-02 || abs(w3.y) < EPSILON*1e-02)
+        roots = Aberth(coefficients);
+    
+    else
+    {
+        const float norm = length(w3);
+        const float r = pow(norm, 1.0/3.0);
+        const float o = atan(w3.y, w3.x);
+
+        for(uint i = 0; i < 3; i++)
+        {
+            const vec2 w = r * complexEXP((o + 2.0 * i * PI) / 3.0);
+            const vec2 x = w - div(s, 3.0 * w);
+            roots[i] = x - vec2(b / 3.0, 0);
+        }
+    }
+
+    vec3 result = vec3(3.402823466E+38, 0, 0);
+    for(uint i = 0; i < 3; i++)
+    {
+        const vec2 root = roots[i];
+
+        if(abs(root.y) < EPSILON)
+        {
+            float real = root.x;
+            real = clamp(real, 0.f, 1.f);
+
+            const vec2 closestPoint = quadraticBezier(real, curve);
+
+            const float dis = distance(closestPoint, point);
+            const float inside = crossZ(quadraticDBezier(real, curve), point - closestPoint);
+
+            if(dis <= result.x)
+                result = vec3(dis, inside, root.x);
+        }
+    }
+
+    return result;
+}

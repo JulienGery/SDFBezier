@@ -49,7 +49,7 @@ struct Bezier
 		const glm::vec2 endVec = m_Points[end];
 		const glm::vec2 preEnd = m_Points[end - 1];
 
-		return endVec - preEnd;
+		return 2.0f * (endVec - preEnd);
 	}
 
 	glm::vec2 getStartDerivate() const
@@ -57,7 +57,7 @@ struct Bezier
 		const glm::vec2 start = m_Points[0];
 		const glm::vec2 sec = m_Points[1];
 
-		return sec - start;
+		return 2.0f*(sec - start);
 	}
 
 	glm::vec2 getLastPoint() const

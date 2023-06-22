@@ -92,7 +92,7 @@ void Glyph::BuildCurves()
         Bezier bezier{ {{m_Outlines.points[2 * start], m_Outlines.points[2 * start + 1]}} };
         size_t i = start;
         bool keepgoing = true;
-        glm::vec2 previusPoint{};
+        glm::vec2 previusPoint{NAN, NAN};
 
         while (keepgoing)
         {
@@ -105,6 +105,12 @@ void Glyph::BuildCurves()
             
             const glm::vec2 point{ m_Outlines.points[2 * i], m_Outlines.points[2 * i + 1] };
 
+            if (glm::distance(point, previusPoint) < 10)
+            {
+                std::cout << "continue\n";
+                continue;
+            }
+
             if (!(m_Outlines.flags[i] & FT_CURVE_TAG_ON) && bezier.size() == 2)
             {
                 const glm::vec2 middle = (previusPoint + point) / 2.f;
@@ -112,7 +118,6 @@ void Glyph::BuildCurves()
                 m_Curves.push_back(bezier);
                 bezier = Bezier{ {middle, point} };
             }
-
             else if (m_Outlines.flags[i] & FT_CURVE_TAG_ON)
             {
                 bezier.addPoint(point);
@@ -184,7 +189,4 @@ void Glyph::generateBisectors()
         m_Bisectors[end] = { startBisector, endAngle };
         start = end + 1;
     }
-
-    for (const auto& curve : m_Curves)
-        std::cout << curve.getDerivateEnd().x << ' ' << curve.getDerivateEnd().y << '\n';
 }

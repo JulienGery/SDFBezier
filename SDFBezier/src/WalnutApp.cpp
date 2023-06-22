@@ -40,6 +40,9 @@ public:
 		const uint32_t width = m_Image->GetWidth();
 		const uint32_t height = m_Image->GetHeight();
 
+
+		std::cout << width << ' ' << height << '\n';
+
 		if (!m_RenderCurve) return;
 
 		for (size_t i = 0; i < width * height; i++)
@@ -49,25 +52,28 @@ public:
 			const Walnut::ScopedTimer timer{ "render time" };
 			const auto& curves = m_glyph.m_Curves;
 
+			if (curvesData.size() != curves.size())
+				curvesData.resize(curves.size());
+
 			for (size_t i = 0; i < curves.size(); i++)
 			{
-				const auto jsp = curves[i].getVectors();
-				renderer.P_0 = jsp[0];
-				renderer.p1 = jsp[1];
-				renderer.p2 = jsp[2];
-				renderer.p3 = jsp[3];
-				renderer.m_Width = width;
-				renderer.m_Height = height;
-				renderer.m_CurveIndex = i;
-				renderer.m_Bis = m_glyph.m_Bisectors[i];
+				const auto& curve = curves[i];
+				const auto vectors = curve.getVectors();
 				
-				const size_t curveSize = curves[i].size();
-				renderer.recordComputeCommandBuffers(curveSize);
-				renderer.render();
-			}
-				
-		}
+				CurvesData data{};
+				data.P_0 = vectors[0];
+				data.p1 = vectors[1];
+				data.p2 = vectors[2];
+				data.p3 = vectors[3];
+				data.bisector = m_glyph.m_Bisectors[i];
+				data.PointsCount = glm::uint(curve.size());
 
+				curvesData[i] = data;
+			}
+
+			renderer.updateUBO(curvesData);
+			renderer.renderSDF(width, height, curvesData.size());				
+		}
 		if (m_Switch == 0)
 		{
 			const std::vector<glm::vec4> result = renderer.getResult();
@@ -175,7 +181,9 @@ private:
 	size_t m_Index = 0;
 	size_t m_Switch = 0;
 
-	Glyph m_glyph{ "..\\polices\\times.ttf", 'U' };
+	Glyph m_glyph{ "..\\polices\\times.ttf", 'A' };
+
+	std::vector<CurvesData> curvesData;
 	
 	Renderer renderer;
 

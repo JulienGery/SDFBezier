@@ -33,6 +33,14 @@ struct OUTPUTIMAGE
     uint32_t padding[3];
 };
 
+struct CurvesData
+{
+    glm::uint PointsCount;
+    glm::uint padding[3];
+    glm::vec4 bisector;
+    glm::vec2 P_0, p1, p2, p3;
+};
+
 
 struct Coeff
 {
@@ -65,24 +73,24 @@ public:
     Renderer() { initVulkan(); }
     ~Renderer() { cleanup(); }
     
-    void recordComputeCommandBuffers(const size_t index);
-    void render();
+    //void recordComputeCommandBuffers(const size_t index);
+    void renderSDF(const size_t width, const size_t height, const uint32_t curvesCount);
+    void generateImage();
+    //void render();
     std::vector<OUTPUTIMAGE> getImage();
 
-    void generateImage();
 
     void updateUBO(const std::vector<float>& angles);
+    void updateUBO(const std::vector<CurvesData>& curvesData);
 
 
     std::vector<glm::vec4> getResult();
     //void getCoeff(std::vector<glm::vec4[4]>& result);
 
-    glm::vec2 P_0, p1, p2, p3;
-    size_t m_Width = 3840, m_Height = 2400;
-    size_t m_CurveIndex;
-    glm::vec4 m_Bis = {};
-
+    
 private:
+    size_t m_Width = 3840, m_Height = 2400;
+
     VkInstance m_Instance;
     VkDebugUtilsMessengerEXT m_DebugMessenger;
 
@@ -128,13 +136,16 @@ private:
     VkShaderModule createShaderModule(const std::vector<char>& code);
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+    void getBuffferContent(const VkBuffer buffer, const size_t bufferSize, void* dst);
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     void cleanup();
 
-    void recordComputeCommandBuffer(VkCommandBuffer commandBuffer, VkPipeline pipeline, VkPipelineLayout pipelineLayout, const size_t count);
+    template <class PushConstantStruct>
+    void recordComputeCommandBuffer(VkCommandBuffer commandBuffer, VkPipeline pipeline, VkPipelineLayout pipelineLayout, const size_t count, const PushConstantStruct pushConstant);
     void submitCommandBuffer(VkCommandBuffer commandBuffer);
     void createSyncObjects();
 
+    template <class PushConstantStruct>
     void createComputePipelineHelper(const std::string& path, VkPipeline& pipeline, VkPipelineLayout& pipelineLayout);
 
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
