@@ -35,11 +35,14 @@ layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 void main()
 {
     const uint index = gl_GlobalInvocationID.x;
+
+    // const uint IndexTest = 29;
+
     if(index < PushConstants.ScreenResolution)
     {
         const float x = index % PushConstants.width;
         const float y = (index - x) / float(PushConstants.width);
-        const vec2 point = vec2(x, y);
+        const vec2 point = vec2((x + 0.5) / PushConstants.width, (y+0.5) / PushConstants.height);
 
         vec4 result = vec4(3.402823466E+38, 0, 0, 0);
         for(uint i = 0; i < PushConstants.CurvesCount; i++)
@@ -58,6 +61,10 @@ void main()
         OUTPUT.result[index] = result;
     }
 }
+
+
+
+
 
 vec2 DBezier(const CurvesData curve)
 {
@@ -123,6 +130,13 @@ vec2 complexSQRT(const float x)
     if(x < 0)
         return vec2(0, sqrt(abs(x)));
     return vec2(sqrt(x), 0);
+}
+
+dvec2 complexSQRT(const double x)
+{
+    if(x < 0)
+        return dvec2(0.0, sqrt(abs(x)));
+    return dvec2(sqrt(x), 0.0);
 }
 
 vec2 mul(const vec2 z, const vec2 zp) // complex multiplication
@@ -254,7 +268,8 @@ vec3 quadratic(const vec2 point, const CurvesData curve)
         return vec3(3.402823466E+38, 0, 0);
 
     const vec2 p = point - curve.P_0;
-
+    
+    //TODO change that to float[4]
     vec2[4] coefficients;
 
     {
@@ -275,7 +290,7 @@ vec3 quadratic(const vec2 point, const CurvesData curve)
     float c = coefficients[1].x;
     float d = coefficients[0].x;
 
-    b /= a;        
+    b /= a;
     c /= a;
     d /= a;
     a = 1;
@@ -288,11 +303,7 @@ vec3 quadratic(const vec2 point, const CurvesData curve)
 
     vec2[3] roots;
     vec2 w3 = vec2(R, 0) + complexSQRT(R * R + Q * Q * Q);
-
-    if(abs(w3.x) < EPSILON*1e-02 || abs(w3.y) < EPSILON*1e-02)
-        roots = Aberth(coefficients);
     
-    else
     {
         const float norm = length(w3);
         const float r = pow(norm, 1.0/3.0);
@@ -303,6 +314,16 @@ vec3 quadratic(const vec2 point, const CurvesData curve)
             const vec2 w = r * complexEXP((o + 2.0 * i * PI) / 3.0);
             const vec2 x = w - div(s, 3.0 * w);
             roots[i] = x - vec2(b / 3.0, 0);
+
+            if(i == 0)
+            {
+                const vec2 tmp = f(roots[0], coefficients);
+                if(distance(tmp, vec2(0)) > EPSILON || isnan(roots[0].x))
+                {
+                    roots = Aberth(coefficients);
+                    break;
+                }
+            }
         }
     }
 

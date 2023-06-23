@@ -52,7 +52,7 @@ void Glyph::readTTF()
     if (error)
         throw std::runtime_error("failed to read file");
 
-    error = FT_Set_Char_Size(face, 0, 1, 1600, 874);
+    error = FT_Set_Char_Size(face, 0, 1, 0, 0);
     if (error)
         throw std::runtime_error("failed to set char size");
 
@@ -72,8 +72,8 @@ void Glyph::readTTF()
     for (size_t i = 0; i < faceOutline.n_points; i++)
     {
         m_Outlines.flags[i] = faceOutline.tags[i];
-        m_Outlines.points[2 * i] = (float)faceOutline.points[i].x;
-        m_Outlines.points[2 * i + 1] = (float)faceOutline.points[i].y;
+        m_Outlines.points[2 * i] = (float)faceOutline.points[i].x / 64.0;
+        m_Outlines.points[2 * i + 1] = (float)faceOutline.points[i].y / 64.0;
     }
 
     m_Outlines.contour.resize(faceOutline.n_contours);
@@ -105,11 +105,11 @@ void Glyph::BuildCurves()
             
             const glm::vec2 point{ m_Outlines.points[2 * i], m_Outlines.points[2 * i + 1] };
 
-            if (glm::distance(point, previusPoint) < 10)
-            {
-                std::cout << "continue\n";
-                continue;
-            }
+            //if (glm::distance(point, previusPoint) < 10)
+            //{
+            //    //std::cout << "continue\n";
+            //    //continue;
+            //}
 
             if (!(m_Outlines.flags[i] & FT_CURVE_TAG_ON) && bezier.size() == 2)
             {

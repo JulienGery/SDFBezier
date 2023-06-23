@@ -75,6 +75,9 @@ public:
 		{
 			const std::vector<glm::vec4> result = renderer.getResult();
 
+			//std::cout << result[110802].x << ' ' << result[110802].y << ' ' << result[110802].z << ' ' << result[110802].w << '\n';
+
+
 			for (size_t i = 0; i < width * height; i++)
 				if(result[i].y < 0)
 					m_ImageData[i] = 0xff00ff00;
@@ -87,7 +90,26 @@ public:
 
 			for (size_t i = 0; i < width * height; i++)
 				m_ImageData[i] = image[i].color;
+
+			//for(size_t i = width; i < width * height - width; i++)
+			//	if (image[i - width].color == 0xffffffff &&
+			//		image[i + width].color == 0xffffffff &&
+			//		image[i - 1].color == 0xffffffff &&
+			//		image[i + 1].color == 0xffffffff &&
+			//		image[i].color == 0xff0000ff)
+			//	{
+			//		std::cout << i << '\n';
+			//		break;
+			//	}
+
+
+			// 172346
+			// 149191
+			// 110802
 		}
+
+		//m_ImageData[110802] = 0xff00f0ff;
+
 
 		for (size_t i = m_Index; i < m_Index + 1; i++)
 		{
@@ -97,11 +119,11 @@ public:
 			const glm::vec2 firstBisector = { point.x, point.y };
 			const glm::vec2 secondBisector = { point.z, point.w };
 
-			drawSq(firstBisector * 50.f + curve.getFirstPoint(), width, height, m_ImageData, 21, 0xffffff00);
-			drawSq(secondBisector * 50.f + curve.getLastPoint(), width, height, m_ImageData, 21, 0xff00f0ff);
+			drawSq(firstBisector * 50.f + curve.getFirstPoint() * glm::vec2(width, height), width, height, m_ImageData, 21, 0xffffff00);
+			drawSq(secondBisector * 50.f + curve.getLastPoint() * glm::vec2(width, height), width, height, m_ImageData, 21, 0xff00f0ff);
 
-			drawSq(curve.getFirstPoint(), width, height, m_ImageData, 21, 0xffff0000);
-			drawSq(curve.getLastPoint(), width, height, m_ImageData, 21, 0xff0000ff);
+			drawSq(curve.getFirstPoint() * glm::vec2(width, height), width, height, m_ImageData, 21, 0xffff0000);
+			drawSq(curve.getLastPoint() * glm::vec2(width, height), width, height, m_ImageData, 21, 0xff0000ff);
 		}
 
 		for (size_t i = 0; i < (height / 2 * width); i++) 
@@ -178,7 +200,7 @@ private:
 	size_t m_Index = 0;
 	size_t m_Switch = 0;
 
-	Glyph m_glyph{ "..\\polices\\times.ttf", 'A' };
+	Glyph m_glyph{ "..\\polices\\times.ttf", '8' };
 
 	std::vector<CurvesData> curvesData;
 	

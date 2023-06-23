@@ -12,7 +12,7 @@
 #include <Walnut/Timer.h>
 #include <string>
 
-#define NDEBUG 1
+//#define NDEBUG 1
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
 #else
@@ -419,7 +419,7 @@ void Renderer::createComputePipeline()
 {   
     const std::vector<std::string> shaders =
     {
-        "../shaders/TestBezier.spv",
+        "../shaders/bezier.spv",
         "../shaders/tmp.spv"
     };
 
