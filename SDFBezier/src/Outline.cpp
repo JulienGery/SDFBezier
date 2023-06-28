@@ -10,7 +10,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h> // only for pi
 
-Outline::Outline(const std::vector<glm::vec2>& points, const std::vector<uint16_t>& flags)
+Contour::Contour(const std::vector<glm::vec2>& points, const std::vector<uint16_t>& flags)
 {
 	buildCurves(points, flags);
 
@@ -44,7 +44,7 @@ glm::vec2 bisector(const glm::vec2 a, const glm::vec2 b)
 	return matrix * x;
 }
 
-void Outline::buildCurves(const std::vector<glm::vec2>& points, const std::vector<uint16_t>& flags)
+void Contour::buildCurves(const std::vector<glm::vec2>& points, const std::vector<uint16_t>& flags)
 {
 	Bezier Curve{ points[0] };
 	glm::vec2 previusPoint = points[0];
@@ -83,7 +83,7 @@ void Outline::buildCurves(const std::vector<glm::vec2>& points, const std::vecto
 	m_Curves.push_back(Curve);
 }
 
-void Outline::buildBisector()
+void Contour::buildBisector()
 {
 	m_Bisector.resize(m_Curves.size());
 

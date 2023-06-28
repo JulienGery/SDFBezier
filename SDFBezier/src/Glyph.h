@@ -20,9 +20,12 @@ class Glyph
 public:
 	std::vector<Bezier> m_Curves; // TMP
 	std::vector<glm::vec4> m_Bisectors; // TMP
-	std::vector<Outline> m_Outlines; // TMP
+	std::vector<Contour> m_Outlines; // TMP
+	glm::vec2 previusPoint; // TMP
+	
 	char m_Character;
 	std::string m_Path;
+
 
 	Glyph(const std::string& path, const char& character);
 
@@ -32,5 +35,5 @@ private:
 	void readTTF();
 	void buildOutlines();
 	void TMPGETBEZIER();
-	void loadGlyph() { readTTF(); buildOutlines(); TMPGETBEZIER(); };
+	void loadGlyph() { readTTF(); buildOutlines(); TMPGETBEZIER();  };
 };

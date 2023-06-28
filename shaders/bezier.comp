@@ -3,6 +3,7 @@
 #define EPSILON 1e-05
 #define MAXITERATION 200
 #define PI 3.14159265358979323846264338327950288419716939937510
+#define DEFAULT_VEC3 vec3(3.402823466E+38, 1, 0)
 
 struct CurvesData
 {
@@ -30,13 +31,15 @@ vec3 linear(const vec2 point, const CurvesData curve);
 
 vec3 quadratic(const vec2 point, const CurvesData curve);
 
+vec3 cubic(const vec2 point, const CurvesData curve);
+
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
 void main()
 {
     const uint index = gl_GlobalInvocationID.x;
 
-    // const uint IndexTest = 29;
+    // const uint IndexTest = 23;
 
     if(index < PushConstants.ScreenResolution)
     {
@@ -44,7 +47,7 @@ void main()
         const float y = (index - x) / float(PushConstants.width);
         const vec2 point = vec2((x + 0.5) / PushConstants.width, (y+0.5) / PushConstants.height);
 
-        vec4 result = vec4(3.402823466E+38, 0, 0, 0);
+        vec4 result = vec4(DEFAULT_VEC3, 0);
         for(uint i = 0; i < PushConstants.CurvesCount; i++)
         {
             CurvesData curve = TMP[i];
@@ -54,6 +57,8 @@ void main()
                 candidate = linear(point, curve);
             else if (curve.PointsCount == 3)
                 candidate = quadratic(point, curve);
+            else /*if (curve.PointsCount == 4)*/ //if not need for font
+                candidate = cubic(point, curve);
 
             if(candidate.x < result.x)
                 result = vec4(candidate, i);
@@ -92,7 +97,7 @@ float crossZ(const vec2 d, const vec2 v)
 vec3 linear(const vec2 point, const CurvesData curve)
 {
     if(! (crossN(curve.bisector.xy, point - Bezier(0., curve)) <= 0. && crossN(curve.bisector.zw, point - Bezier(1., curve)) >= 0.))
-        return vec3(3.402823466E+38, 0, 0);          
+        return DEFAULT_VEC3;          
 
     const vec2 p = point - curve.P_0;
 
@@ -265,7 +270,7 @@ vec2[3] Aberth(const in vec2[4] coefficients)
 vec3 quadratic(const vec2 point, const CurvesData curve)
 {
     if(!(crossN(curve.bisector.xy, point - quadraticBezier(0., curve)) <= 0. && crossN(curve.bisector.zw, point - quadraticBezier(1., curve)) >= 0.))
-        return vec3(3.402823466E+38, 0, 0);
+        return DEFAULT_VEC3;
 
     const vec2 p = point - curve.P_0;
     
@@ -327,7 +332,7 @@ vec3 quadratic(const vec2 point, const CurvesData curve)
         }
     }
 
-    vec3 result = vec3(3.402823466E+38, 0, 0);
+    vec3 result = DEFAULT_VEC3;
     for(uint i = 0; i < 3; i++)
     {
         const vec2 root = roots[i];
@@ -341,6 +346,172 @@ vec3 quadratic(const vec2 point, const CurvesData curve)
 
             const float dis = distance(closestPoint, point);
             const float inside = crossZ(quadraticDBezier(real, curve), point - closestPoint);
+
+            if(dis <= result.x)
+                result = vec3(dis, inside, root.x);
+        }
+    }
+
+    return result;
+}
+
+vec2 cubicBezier(const float t, const CurvesData curve)
+{
+    return curve.P_0 + 3.0 * t * curve.p1 +
+        3.0 * t * t * curve.p2 + t * t * t * curve.p3;
+}
+
+vec2[5] startingPoints(const in vec2[6] coefficients)
+{
+    vec2 a_5 = coefficients[5];
+    vec2 a_0 = coefficients[0];
+
+    float offset = PI / (2.0 * 5.0);
+    float angle = 2.0 * PI / 5.0;
+
+    bool radiusZero = false;
+    float radius;
+    
+    if(a_0.x == 0 && a_0.y == 0)
+    {
+        radius = pow(length(div(coefficients[1], a_5)), 0.25);
+        angle = 2.0 * PI / 4.0;
+        offset = PI / (2.0 * 4.0);
+        radiusZero = true;
+    }
+    else 
+        radius = pow(length(div(a_0, a_5)), 1./5.);
+    
+    vec2[5] roots;
+
+    for(uint i = 0; i < 5; i++)
+        roots[i] = radius * complexEXP(i * angle + offset);
+
+    if(radiusZero)
+        roots[0] = vec2(0);
+    
+    return roots;
+}
+
+vec2 f(const vec2 z, const in vec2[6] coeff) // compute polynom at z
+{
+    vec2 tmp = vec2(1, 0);
+    vec2 result = coeff[0];
+    for(uint i = 1; i < 6; i++)
+    {
+        tmp = mul(tmp, z);
+        result += mul(coeff[i], tmp);
+
+    }
+    return result;
+}
+
+vec2 fp(const vec2 z, const in vec2[6] coeff) // compute derivate at z.
+{
+    vec2 tmp = vec2(1, 0);
+    vec2 result = coeff[1];
+    for(uint i = 2; i < 6; i++)
+    {
+        tmp = mul(tmp, z);
+        result += mul(coeff[i] * float(i), tmp);
+    }
+    return result;
+}
+
+vec2 sumOfApproximation(const uint index, const in vec2[5] values)
+{
+    vec2 result = vec2(0);
+    for(uint j = 0; j < 6 - 1; j++)
+        if (j != index)
+            result += div(vec2(1, 0), values[index] - values[j]) ;
+    return result;
+}
+
+vec2[5] Aberth(const vec2[6] coefficients)
+{
+
+    vec2[5] roots = startingPoints(coefficients);
+
+    for(uint i = 0; i < MAXITERATION; i++)
+    {
+        const vec2[5] CurrentApproximation = roots;
+        uint finish = 0;
+        for(uint k = 0; k < 5; k++)
+        {
+            const vec2 z = CurrentApproximation[k];
+            const vec2 p = f(z, coefficients);
+            const vec2 pp = fp(z, coefficients);
+
+            const vec2 POverPP = div(p, pp);
+            const vec2 sum = sumOfApproximation(k, CurrentApproximation);
+            const vec2 zPlusOne = z - div(POverPP, vec2(1, 0) - mul(POverPP, sum));
+            roots[k] = zPlusOne;
+
+            if(distance(z, zPlusOne) < EPSILON)
+                finish++;
+        }
+
+        if(finish == 5)
+            break;
+    }
+
+    return roots;
+}
+
+vec2 cubicDBezier(const float t, const CurvesData curve)
+{
+        return  3.0 * curve.p1
+                + 6.0 * t * curve.p2 
+                + 3.0 * t * t * curve.p3;
+}
+
+vec3 cubic(const vec2 point, const CurvesData curve)
+{
+    const vec2 DirectionStart = cubicDBezier(0, curve);
+    const vec2 DirectionEnd = cubicDBezier(1, curve);
+    const vec2 CurveStart = cubicBezier(0, curve);
+    const vec2 CurveEnd = cubicBezier(1, curve);
+
+    if(!(crossN(-DirectionStart, point - CurveStart) <= 0. && crossN(DirectionEnd, point - CurveEnd) >= 0.))
+        return DEFAULT_VEC3; //TODO verif that!!
+
+    const vec2 p = point - curve.P_0;
+
+    vec2[6] coefficients; //TODO change to float array
+
+    {
+        const float a = dot(curve.p3, curve.p3);
+        const float b = 5.f * dot(curve.p2, curve.p3);
+        const float c = 4.f * dot(curve.p1, curve.p3) + 6.0 * dot(curve.p2, curve.p2);
+
+        const float d = 9.f * dot(curve.p1, curve.p2) - dot(curve.p3, p); // t^2
+        const float e = 3.f * dot(curve.p1, curve.p1) - 2.0 * dot(curve.p2, p); // t
+        const float f = -dot(curve.p1, p);
+
+        coefficients[0] = vec2(f, 0);
+        coefficients[1] = vec2(e, 0);
+        coefficients[2] = vec2(d, 0);
+        coefficients[3] = vec2(c, 0);
+        coefficients[4] = vec2(b, 0);
+        coefficients[5] = vec2(a, 0);
+    }
+
+    const vec2[5] roots = Aberth(coefficients);
+
+    vec3 result = DEFAULT_VEC3;
+    for(uint i = 0; i < 5; i++)
+    {
+        const vec2 root = roots[i];
+
+        if(abs(root.y) < EPSILON)
+        {
+            float real = root.x;
+            real = clamp(real, 0.f, 1.f);
+
+            const vec2 closestPoint = cubicBezier(real, curve);
+
+            const float dis = distance(closestPoint, point);
+            const float inside = crossZ(cubicDBezier(real, curve), point - closestPoint);
 
             if(dis <= result.x)
                 result = vec3(dis, inside, root.x);

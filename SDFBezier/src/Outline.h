@@ -8,14 +8,14 @@
 #include <iostream>
 #include <stdexcept>
 
-class Outline
+class Contour
 {
 public:
 	std::vector<Bezier> m_Curves; // TMP
 	std::vector<glm::vec4> m_Bisector; // TMP
 
-	Outline(const std::vector<glm::vec2>& points, const std::vector<uint16_t>& flag);
-	~Outline() {}
+	Contour(const std::vector<glm::vec2>& points, const std::vector<uint16_t>& flag);
+	~Contour() {}
 
 private:
 

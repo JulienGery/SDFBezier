@@ -14,7 +14,7 @@
 
 
 
-glm::vec2 computeBezier(const Bezier& bezier, const float t)
+glm::vec2 computeBezier(const Bezier& bezier, const float t) // TMP
 {
 	const auto& vectors = bezier.getVectors();
 	if (bezier.size() == 2)
@@ -52,19 +52,20 @@ public:
 			m_ImageData[i] = 0x00000000;
 
 
-		//for (const auto& curve : m_glyph.m_Outlines[0].m_Curves)
-		//	for (float i = 0; i < 1.0; i += 0.001)
-		//	{
-		//		const glm::vec2 location = computeBezier(curve, i) * glm::vec2{width, height};
-		//		drawSq(location, width, height, m_ImageData, 5, 0xff0000ff);
-		//	}
+		for (const auto& outline : m_glyph.m_Outlines)
+			for(const auto& curve : m_glyph.m_Curves)
+				for (float i = 0; i < 1.0; i += 0.001)
+				{
+					const glm::vec2 location = computeBezier(curve, i) * glm::vec2{width, height};
+					drawSq(location, width, height, m_ImageData, 5, 0xff0000ff);
+				}
 
-		//const auto& curve = m_glyph.m_Curves[m_Index];
-		//for (float i = 0; i < 1.0; i += 0.001)
-		//{
-		//	const glm::vec2 location = computeBezier(curve, i) * glm::vec2{width, height};
-		//	drawSq(location, width, height, m_ImageData, 5, 0xff00ff00);
-		//}
+		const auto& curve = m_glyph.m_Curves[m_Index];
+		for (float i = 0; i < 1.0; i += 0.001)
+		{
+			const glm::vec2 location = computeBezier(curve, i) * glm::vec2{width, height};
+			drawSq(location, width, height, m_ImageData, 5, 0xff00ffff);
+		}
 
 		{
 			const Walnut::ScopedTimer timer{ "render time" };
@@ -96,11 +97,11 @@ public:
 		{
 			const std::vector<glm::vec4> result = renderer.getResult();
 
-		//	//std::cout << result[110802].x << ' ' << result[110802].y << ' ' << result[110802].z << ' ' << result[110802].w << '\n';
+			//std::cout << result[110802].x << ' ' << result[110802].y << ' ' << result[110802].z << ' ' << result[110802].w << '\n';
 
 
 			for (size_t i = 0; i < width * height; i++)
-				if(result[i].y < 0)
+				if(result[i].y <= 0)
 					m_ImageData[i] = 0xff00ff00;
 		}
 		//else if (m_Switch == 1)
@@ -134,15 +135,23 @@ public:
 
 		for (size_t i = m_Index; i < m_Index + 1; i++)
 		{
-			break;
 			const glm::vec4 point = m_glyph.m_Bisectors[i];
 			const auto& curve = m_glyph.m_Curves[i];
 
 			const glm::vec2 firstBisector = { point.x, point.y };
 			const glm::vec2 secondBisector = { point.z, point.w };
 
-			drawSq(firstBisector * 50.f + curve.getFirstPoint() * glm::vec2(width, height), width, height, m_ImageData, 21, 0xffffff00);
-			drawSq(secondBisector * 50.f + curve.getLastPoint() * glm::vec2(width, height), width, height, m_ImageData, 21, 0xff00f0ff);
+			
+			if (curve.size() == 4)
+			{
+				drawSq(-glm::normalize(curve.startDerivate()) * 50.f + curve.getFirstPoint() * glm::vec2(width, height), width, height, m_ImageData, 21, 0xffffff00);
+				drawSq(glm::normalize(curve.endDerivate()) * 50.f + curve.getLastPoint() * glm::vec2(width, height), width, height, m_ImageData, 21, 0xff00f0ff);
+			}
+			else
+			{
+				drawSq(firstBisector * 50.f + curve.getFirstPoint() * glm::vec2(width, height), width, height, m_ImageData, 21, 0xffffff00); //blue firt bisector
+				drawSq(secondBisector * 50.f + curve.getLastPoint() * glm::vec2(width, height), width, height, m_ImageData, 21, 0xff00f0ff);
+			}
 
 			drawSq(curve.getFirstPoint() * glm::vec2(width, height), width, height, m_ImageData, 21, 0xffff0000);
 			drawSq(curve.getLastPoint() * glm::vec2(width, height), width, height, m_ImageData, 21, 0xff0000ff);
@@ -222,7 +231,7 @@ private:
 	size_t m_Index = 0;
 	size_t m_Switch = 0;
 
-	Glyph m_glyph{ "..\\polices\\times.ttf", '8' };
+	Glyph m_glyph{ "..\\polices\\HyliaSerifBeta-Regular.otf", 'S' };
 
 	std::vector<CurvesData> curvesData;
 	
