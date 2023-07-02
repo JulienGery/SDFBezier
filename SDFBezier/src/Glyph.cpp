@@ -84,12 +84,12 @@ void Glyph::readTTF()
     error = FT_Set_Char_Size(face, 0, 1, 0, 0);
     if (error)
         throw std::runtime_error("failed to set char size");
-
+     
     glyphIndex = FT_Get_Char_Index(face, m_Character);
     if (!glyphIndex)
         throw std::runtime_error("failed to get index");
 
-    error = FT_Load_Glyph(face, glyphIndex, FT_LOAD_NO_BITMAP);
+    error = FT_Load_Glyph(face, glyphIndex, FT_LOAD_NO_SCALE);
     if (error)
         throw std::runtime_error("failed to load glyph");
 
@@ -105,9 +105,10 @@ void Glyph::readTTF()
     
     const auto bbox = face->bbox;
 
-    std::cout << bbox.xMin / 64.0 << ' ' << bbox.xMax / 64.0 << '\t' << bbox.yMin / 64.0 << ' ' << bbox.yMax / 64.0 << '\n';
+    //std::cout << bbox.xMin / 64.0 << ' ' << bbox.xMax / 64.0 << '\t' << bbox.yMin / 64.0 << ' ' << bbox.yMax / 64.0 << '\n';
 
-    FT_Outline_Reverse(&face->glyph->outline);
+    if (FT_Outline_Get_Orientation(&face->glyph->outline) == FT_ORIENTATION_FILL_LEFT)
+        FT_Outline_Reverse(&face->glyph->outline);
 
 
     FT_Outline faceOutline = face->glyph->outline;
@@ -118,8 +119,8 @@ void Glyph::readTTF()
     for (size_t i = 0; i < faceOutline.n_points; i++)
     {
         glyphData.flags[i] = faceOutline.tags[i];
-        glyphData.points[i].x = (float)faceOutline.points[i].x / 64.0;
-        glyphData.points[i].y = (float)faceOutline.points[i].y / 64.0;
+        glyphData.points[i].x = (double)faceOutline.points[i].x / 1024.0;
+        glyphData.points[i].y = (double)faceOutline.points[i].y / 1024.0;
     }
 
     glyphData.contour.resize(faceOutline.n_contours);
