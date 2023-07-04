@@ -18,8 +18,7 @@ Glyph::Glyph(const std::string& path, const char& character)
 int TMPMoveTO(const FT_Vector* to, void* user)
 {
     Glyph* glyph = reinterpret_cast<Glyph*>(user);
-    //glyph->m_Outlines.push_back()
-
+    glyph->m_Contours.push_back(Contour{});
 
     glyph->previusPoint = { to->x, to->y };
     return 0;
@@ -28,8 +27,10 @@ int TMPMoveTO(const FT_Vector* to, void* user)
 int TMPLineTO(const FT_Vector* to, void* user)
 {
     Glyph* glyph = reinterpret_cast<Glyph*>(user);
-    glyph->m_Curves.push_back(
-        Bezier{ {glyph->previusPoint / 64.f, {to->x / 64.0, to->y / 64.0}} }
+
+    const size_t last = glyph->m_Contours.size() - 1;
+    glyph->m_Contours[last].push_back(
+        Bezier{ {glyph->previusPoint, {to->x, to->y} } }
     );
 
     glyph->previusPoint = { to->x, to->y };
@@ -39,8 +40,10 @@ int TMPLineTO(const FT_Vector* to, void* user)
 int TMPConicTO(const FT_Vector* control, const FT_Vector* to, void* user)
 {
     Glyph* glyph = reinterpret_cast<Glyph*>(user);
-    glyph->m_Curves.push_back(
-        Bezier{ {glyph->previusPoint / 64.f, {control->x / 64.0, control->y / 64.0}, {to->x / 64.0, to->y / 64.0}} }
+    
+    const size_t last = glyph->m_Contours.size() - 1;
+    glyph->m_Contours[last].push_back(
+        Bezier{ {glyph->previusPoint , {control->x , control->y }, {to->x , to->y }} }
     );
 
     glyph->previusPoint = { to->x, to->y };
@@ -53,13 +56,12 @@ int TMPCubicTO( const FT_Vector* control1,
                 void* user)
 {
     Glyph* glyph = reinterpret_cast<Glyph*>(user);
-    glyph->m_Curves.push_back(
-        Bezier{
-            {glyph->previusPoint / 64.f, {control1->x / 64.f, control1->y / 64.f},
-            {control2->x / 64.f, control2->y / 64.f}, {to->x / 64.f, to->y / 64.f}
-            }}
-    );
 
+    const size_t last = glyph->m_Contours.size() - 1;
+    glyph->m_Contours[last].push_back( Bezier{ 
+        {glyph->previusPoint , {control1->x , control1->y },
+        {control2->x , control2->y }, {to->x , to->y }} }
+    );
 
     glyph->previusPoint = { to->x, to->y };
     return 0;
@@ -93,68 +95,84 @@ void Glyph::readTTF()
     if (error)
         throw std::runtime_error("failed to load glyph");
 
-    //FT_Outline_Funcs function{};
-    //function.move_to = TMPMoveTO;
-    //function.line_to = TMPLineTO;
-    //function.conic_to = TMPConicTO;
-    //function.cubic_to = TMPCubicTO;
-    //function.delta = 0;
-    //function.shift = 0;
+    FT_Outline_Funcs functions{};
+    functions.move_to = TMPMoveTO;
+    functions.line_to = TMPLineTO;
+    functions.conic_to = TMPConicTO;
+    functions.cubic_to = TMPCubicTO;
+    functions.delta = 0;
+    functions.shift = 0;
 
-    //error = FT_Outline_Decompose(&face->glyph->outline, &function, this);
+    error = FT_Outline_Decompose(&face->glyph->outline, &functions, this);
     
-    const auto bbox = face->bbox;
-
-    //std::cout << bbox.xMin / 64.0 << ' ' << bbox.xMax / 64.0 << '\t' << bbox.yMin / 64.0 << ' ' << bbox.yMax / 64.0 << '\n';
-
     if (FT_Outline_Get_Orientation(&face->glyph->outline) == FT_ORIENTATION_FILL_LEFT)
-        FT_Outline_Reverse(&face->glyph->outline);
+        reverse();
 
 
-    FT_Outline faceOutline = face->glyph->outline;
-
-    glyphData.points.resize(faceOutline.n_points);
-    glyphData.flags.resize(faceOutline.n_points);
-
-    for (size_t i = 0; i < faceOutline.n_points; i++)
+    for (size_t i = 0; i < m_Contours.size(); i++)
     {
-        glyphData.flags[i] = faceOutline.tags[i];
-        glyphData.points[i].x = (double)faceOutline.points[i].x / 1024.0;
-        glyphData.points[i].y = (double)faceOutline.points[i].y / 1024.0;
+        m_Contours[i].buildBisector();
+        m_Contours[i].computeBbox();
     }
 
-    glyphData.contour.resize(faceOutline.n_contours);
-    for (size_t i = 0; i < faceOutline.n_contours; i++)
-        glyphData.contour[i] = faceOutline.contours[i];
+    //TODO rework that part
+    computeBbox();
+
+    const float scaleFactor = 1./
+        std::min(m_bbox.z - m_bbox.x, m_bbox.w - m_bbox.y);
+
+    scale(scaleFactor / 1.80);
+
+    std::cout << "scale factor: " << scaleFactor << '\n';
 
     error = FT_Done_FreeType(library);
     if (error)
         std::cout << "error when closing freetype\n";
 }
 
-void Glyph::buildOutlines()
-{
-    uint16_t start = 0;
-    
-    for (size_t i = 0; i < glyphData.contour.size(); i++)
-    {
-        const uint16_t end = glyphData.contour[i];
-        const std::vector<glm::vec2> points{&glyphData.points[start], &glyphData.points[end + 1]};
-        const std::vector<uint16_t> flags{&glyphData.flags[start], &glyphData.flags[end + 1]};
-        const Contour outline{ points, flags };
-        m_Outlines.push_back(outline);
-
-        start = end + 1;
-    }
-}
-
 void Glyph::TMPGETBEZIER()
 {
-    for (const auto& outline : m_Outlines)
+    for (const auto& outline : m_Contours)
     {
         for (const auto& bisector : outline.m_Bisector)
             m_Bisectors.push_back(bisector);
         for (const auto& curve : outline.m_Curves)
             m_Curves.push_back(curve);
     }
+}
+
+void Glyph::reverse()
+{
+    for (size_t i = 0; i < m_Contours.size(); i++)
+        m_Contours[i].reverse();
+}
+
+void Glyph::scale(const float c)
+{
+    for (size_t i = 0; i < m_Contours.size(); i++)
+        m_Contours[i].scale(c);
+    m_bbox *= c;
+}
+
+//TODO rework that
+void Glyph::computeBbox()
+{
+    glm::vec2 bottomLeft = { m_Contours[0].m_bbox.x , m_Contours[0].m_bbox.y };
+    glm::vec2 topRight = { m_Contours[0].m_bbox.z , m_Contours[0].m_bbox.w };
+
+    for (size_t i = i; i < m_Contours.size(); i++)
+    {
+        const auto bbox = m_Contours[i].m_bbox;
+        if (bbox.x < bottomLeft.x)
+            bottomLeft.x = bbox.x;
+        if (bbox.y < bottomLeft.y)
+            bottomLeft.y = bbox.y;
+
+        if (bbox.z > topRight.x)
+            topRight.x = bbox.z;
+        if (bbox.w > topRight.y)
+            topRight.y = bbox.w;
+    }
+
+    m_bbox = { bottomLeft, topRight };
 }

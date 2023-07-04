@@ -37,6 +37,7 @@ struct CurvesData
 {
     glm::uint PointsCount;
     glm::uint padding[3];
+    glm::vec4 centerAndTopRight;
     glm::vec4 bisector;
     glm::vec2 P_0, p1, p2, p3;
 };
@@ -75,7 +76,7 @@ public:
     
     //void recordComputeCommandBuffers(const size_t index);
     void renderSDF(const size_t width, const size_t height, const uint32_t curvesCount);
-    void generateImage();
+    void generateImage(const size_t curvesCount);
     //void render();
     std::vector<OUTPUTIMAGE> getImage();
 

@@ -28,7 +28,7 @@ const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
 
-
+//TMP
 struct UniformBufferObject
 {
     glm::vec4 angles[100];
@@ -41,7 +41,7 @@ struct PushConstantGenerateSDF
 
 struct PushConstantGenrateImage
 {
-    int maxIndex;
+    int maxIndex, curvesCount;
 };
 
 void coutRoots(const Roots& roots)
@@ -178,12 +178,13 @@ std::vector<OUTPUTIMAGE> Renderer::getImage()
     return result;
 }
 
-void Renderer::generateImage()
+void Renderer::generateImage(const size_t curvesCount)
 {
     const size_t count = m_Width * m_Height / 64 + 1;
 
     PushConstantGenrateImage pushConstant{};
     pushConstant.maxIndex = m_Height * m_Width;
+    pushConstant.curvesCount = curvesCount;
 
     recordComputeCommandBuffer(m_ComputeCommandBuffers[1], m_Pipelines[1], m_PipelinesLayouts[1], count, pushConstant);
     

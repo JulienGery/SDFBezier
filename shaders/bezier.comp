@@ -8,6 +8,7 @@
 struct CurvesData
 {
     uint PointsCount;
+    vec4 centerAndTopRight;
     vec4 bisector;
     vec2 P_0, p1, p2, p3;
 };
@@ -29,9 +30,9 @@ layout (std140, binding = 1) writeonly buffer IMAGEOUT
 
 vec3 linear(const vec2 point, const CurvesData curve);
 
-vec3 quadratic(const vec2 point, const CurvesData curve);
+vec3 quadratic(const vec2 point, const CurvesData curve, const float currentDistance);
 
-vec3 cubic(const vec2 point, const CurvesData curve);
+vec3 cubic(const vec2 point, const CurvesData curve, const float currentDistance);
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
@@ -39,7 +40,7 @@ void main()
 {
     const uint index = gl_GlobalInvocationID.x;
 
-    // const uint IndexTest = 23;
+    // const uint IndexTest = 12;
 
     if(index < PushConstants.ScreenResolution)
     {
@@ -56,15 +57,23 @@ void main()
             if(curve.PointsCount == 2)
                 candidate = linear(point, curve);
             else if (curve.PointsCount == 3)
-                candidate = quadratic(point, curve);
+                candidate = quadratic(point, curve, result.x);
             else /*if (curve.PointsCount == 4)*/ //if not need for font
-                candidate = cubic(point, curve);
+                candidate = cubic(point, curve, result.x);
 
             if(candidate.x < result.x)
                 result = vec4(candidate, i);
         }
         OUTPUT.result[index] = result;
     }
+}
+
+//https://iquilezles.org/articles/distfunctions2d/
+//signed distance of a box!!!
+float sdBox( in vec2 p, in vec2 b )
+{
+    vec2 d = abs(p)-b;
+    return length(max(d,0.0)) + min(max(d.x,d.y), 0.0);
 }
 
 vec2 DBezier(const CurvesData curve)
@@ -263,10 +272,15 @@ vec2[3] Aberth(const in float[4] coefficients)
     return roots;
 }
 
-vec3 quadratic(const vec2 point, const CurvesData curve)
+vec3 quadratic(const vec2 point, const CurvesData curve, const float currentDistance)
 {
+    
+    if(sdBox(point - curve.centerAndTopRight.xy, curve.centerAndTopRight.zw) > currentDistance)
+        return DEFAULT_VEC3;
+
     if(!(crossN(curve.bisector.xy, point - quadraticBezier(0., curve)) <= 0. && crossN(curve.bisector.zw, point - quadraticBezier(1., curve)) >= 0.))
         return DEFAULT_VEC3;
+
 
     const vec2 p = point - curve.P_0;
     
@@ -459,19 +473,24 @@ vec2 cubicDBezier(const float t, const CurvesData curve)
                 + 3.0 * t * t * curve.p3;
 }
 
-vec3 cubic(const vec2 point, const CurvesData curve)
-{
-    const vec2 CurveStart = cubicBezier(0., curve);
-    const vec2 CurveEnd = cubicBezier(1., curve);
 
-    if(!(crossN(curve.bisector.xy, point - CurveStart) <= 0 && crossN(curve.bisector.zw, point - CurveEnd) >= 0))
+
+vec3 cubic(const vec2 point, const CurvesData curve, const float currentDistance)
+{
+    // const vec2 DirectionStart = cubicDBezier(0, curve);
+    // const vec2 DirectionEnd = cubicDBezier(1, curve);
+    // const vec2 CurveStart = cubicBezier(0., curve);
+    // const vec2 CurveEnd = cubicBezier(1., curve);
+
+    // if(!(crossN(-curve.bisector.xy, point - CurveStart) <= 0 && crossN(curve.bisector.zw, point - CurveEnd) >= 0))
+    //     return DEFAULT_VEC3;
+
+    if(sdBox(point - curve.centerAndTopRight.xy, curve.centerAndTopRight.zw) > currentDistance)
         return DEFAULT_VEC3;
-    
 
     const vec2 p = point - curve.P_0;
 
     float[6] coefficients;
-
     {
         const float a = dot(curve.p3, curve.p3);
         const float b = 5.f * dot(curve.p2, curve.p3);

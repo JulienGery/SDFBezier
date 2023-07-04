@@ -1,4 +1,4 @@
-#include "Outline.h"
+#include "Contour.h"
 #include "glm/mat2x2.hpp"
 #include "glm/trigonometric.hpp"
 
@@ -9,14 +9,27 @@
 
 #define _USE_MATH_DEFINES
 #include <math.h> // only for pi
+#include "Contour.h"
 
-Contour::Contour(const std::vector<glm::vec2>& points, const std::vector<uint16_t>& flags)
+
+void Contour::push_back(const Bezier& bezier)
 {
-	buildCurves(points, flags);
+	m_Curves.push_back(bezier);
+}
 
-	//edge pruning somewhere
+void Contour::reverse()
+{
+	for (size_t i = 0; i < m_Curves.size(); i++)
+		m_Curves[i].reverse();
 
-	buildBisector();
+	std::reverse(m_Curves.begin(), m_Curves.end());
+}
+
+void Contour::scale(const float c)
+{
+	for (size_t i = 0; i < m_Curves.size(); i++)
+		m_Curves[i].scale(c);
+	m_bbox *= c;
 }
 
 glm::mat2 rotationMatrix(const float o)
@@ -44,45 +57,6 @@ glm::vec2 bisector(const glm::vec2 a, const glm::vec2 b)
 	return matrix * x;
 }
 
-void Contour::buildCurves(const std::vector<glm::vec2>& points, const std::vector<uint16_t>& flags)
-{
-	Bezier Curve{ points[0] };
-	glm::vec2 previusPoint = points[0];
-	for (size_t i = 1; i < points.size(); i++)
-	{
-		//Build curves
-
-		const glm::vec2 point = points[i];
-		const uint16_t flag = flags[i];
-
-		if (flags[i] & FT_CURVE_TAG_ON)
-		{
-			Curve.addPoint(point);
-			m_Curves.push_back(Curve);
-
-			Curve = Bezier{ point };
-		}
-		else if (!(flag & FT_CURVE_TAG_CUBIC) && Curve.size() == 2)
-		{
-			const glm::vec2 middle = (previusPoint + point) / 2.0f;
-
-			Curve.addPoint(middle);
-			m_Curves.push_back(Curve);
-
-			Curve = Bezier{ middle };
-			Curve.addPoint(point);
-		}
-		else
-			Curve.addPoint(point);
-
-		previusPoint = point;
-	}
-
-	const glm::vec2 firtPoint = points[0];
-	Curve.addPoint(firtPoint);
-	m_Curves.push_back(Curve);
-}
-
 void Contour::buildBisector()
 {
 	m_Bisector.resize(m_Curves.size());
@@ -101,4 +75,32 @@ void Contour::buildBisector()
 		startBisector = endBisector;
 	}
 
+}
+
+void Contour::computeBbox()
+{
+	std::vector<glm::vec4> bboxs(m_Curves.size());
+	for (size_t i = 0; i < m_Curves.size(); i++)
+	{
+		m_Curves[i].computeBbox();
+		bboxs[i] = m_Curves[i].bbox();
+	}
+
+	glm::vec2 bottomLeft = { bboxs[0].x, bboxs[0].y };
+	glm::vec2 topRight = { bboxs[0].z, bboxs[0].w };
+
+	for (const auto i : bboxs)
+	{
+		if (i.x < bottomLeft.x)
+			bottomLeft.x = i.x;
+		if (i.y < bottomLeft.y)
+			bottomLeft.y = i.y;
+		
+		if (i.z > topRight.x)
+			topRight.x = i.z;
+		if (i.w > topRight.y)
+			topRight.y = i.w;
+	}
+
+	m_bbox = { bottomLeft, topRight };
 }

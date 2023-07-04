@@ -52,7 +52,68 @@ public:
 			m_ImageData[i] = 0x00000000;
 
 
-		for (const auto& outline : m_glyph.m_Outlines)
+
+		{
+			const Walnut::ScopedTimer timer{ "render time" };
+			const auto& curves = m_glyph.m_Curves;
+
+			if (curvesData.size() != curves.size())
+				curvesData.resize(curves.size());
+
+			for (size_t i = 0; i < curves.size(); i++)
+			{
+				const auto& curve = curves[i];
+				const auto vectors = curve.getVectors();
+				const auto bbox = curve.bbox();
+
+				const glm::vec2 a = { bbox.x, bbox.y };
+				const glm::vec2 b = { bbox.z, bbox.w };
+				const glm::vec2 center = (a + b) / 2.f;
+
+				CurvesData data{};
+				data.P_0 = vectors[0];
+				data.p1 = vectors[1];
+				data.p2 = vectors[2];
+				data.p3 = vectors[3];
+				data.bisector = m_glyph.m_Bisectors[i];
+				data.PointsCount = glm::uint(curve.size());
+				data.centerAndTopRight = { center, b - center };
+
+				curvesData[i] = data;
+			}
+
+			renderer.updateUBO(curvesData);
+			renderer.renderSDF(width, height, curvesData.size());				
+		}
+		if (m_Switch == 0)
+		{
+			const std::vector<glm::vec4> result = renderer.getResult();
+
+			for (size_t i = 0; i < width * height; i++)
+				if(result[i].y <= 0)
+					m_ImageData[i] = 0xff00ff00;
+		}
+		else if (m_Switch == 1)
+		{
+			//renderer.updateUBO(m_glyph.m_Angles);
+			renderer.generateImage(m_glyph.m_Curves.size());
+			const std::vector<OUTPUTIMAGE> image = renderer.getImage();
+
+			for (size_t i = 0; i < width * height; i++)
+				m_ImageData[i] = image[i].color;
+
+		}
+
+		//	// 172346
+		//	// 149191
+		//	// 110802
+		//	// 1141258
+		//}
+
+
+		// 8259 264 172
+
+		for (const auto& outline : m_glyph.m_Contours)
 			for(const auto& curve : m_glyph.m_Curves)
 				for (float i = 0; i < 1.0; i += 0.001)
 				{
@@ -67,72 +128,6 @@ public:
 			drawSq(location, width, height, m_ImageData, 5, 0xff00ffff);
 		}
 
-		{
-			const Walnut::ScopedTimer timer{ "render time" };
-			const auto& curves = m_glyph.m_Curves;
-
-			if (curvesData.size() != curves.size())
-				curvesData.resize(curves.size());
-
-			for (size_t i = 0; i < curves.size(); i++)
-			{
-				const auto& curve = curves[i];
-				const auto vectors = curve.getVectors();
-				
-				CurvesData data{};
-				data.P_0 = vectors[0];
-				data.p1 = vectors[1];
-				data.p2 = vectors[2];
-				data.p3 = vectors[3];
-				data.bisector = m_glyph.m_Bisectors[i];
-				data.PointsCount = glm::uint(curve.size());
-
-				curvesData[i] = data;
-			}
-
-			renderer.updateUBO(curvesData);
-			renderer.renderSDF(width, height, curvesData.size());				
-		}
-		if (m_Switch == 0)
-		{
-			const std::vector<glm::vec4> result = renderer.getResult();
-
-			if(m_Index < result.size())
-				//std::cout << result[m_Index].x << ' ' << result[m_Index].y << ' ' << result[m_Index].z << ' ' << result[m_Index].w << '\n';
-
-			for (size_t i = 0; i < width * height; i++)
-				if(result[i].y <= 0)
-					m_ImageData[i] = 0xff00ff00;
-		}
-		else if (m_Switch == 1)
-		{
-			//renderer.updateUBO(m_glyph.m_Angles);
-			renderer.generateImage();
-			const std::vector<OUTPUTIMAGE> image = renderer.getImage();
-
-			for (size_t i = 0; i < width * height; i++)
-				m_ImageData[i] = image[i].color;
-
-		//	//for(size_t i = width; i < width * height - width; i++)
-		//	//	if (image[i - width].color == 0xffffffff &&
-		//	//		image[i + width].color == 0xffffffff &&
-		//	//		image[i - 1].color == 0xffffffff &&
-		//	//		image[i + 1].color == 0xffffffff &&
-		//	//		image[i].color == 0xff0000ff)
-		//	//	{
-		//	//		std::cout << i << '\n';
-		//	//		break;
-		}
-
-
-		//	// 172346
-		//	// 149191
-		//	// 110802
-		//	// 1141258
-		//}
-
-
-		// 8259 264 172
 
 		for (size_t i = width; i < width * height; i++)
 			if (m_ImageData[i] == 0xff00ff00 &&
@@ -142,7 +137,7 @@ public:
 				m_ImageData[i + width] == 0)
 				m_Index = i;
 
-		m_ImageData[m_Index] = 0xffffffff;
+		//m_ImageData[m_Index] = 0xffffffff;
 
 		for (size_t i = m_CurveIndex; i < m_CurveIndex + 1; i++)
 		{
@@ -245,10 +240,8 @@ private:
 	size_t m_Switch = 0;
 
 	// PB with 9 HyliaSerifBeta-Regular.otf (parsing)
-	// PB with 8 HyliaSerifBeta-Regular.otf (rendering)
-	// PB with U HyliaSerifBeta-Regular.otf (parsing (probably))
 
-	Glyph m_glyph{ "..\\polices\\times.ttf", 'a' };
+	Glyph m_glyph{ "..\\polices\\HyliaSerifBeta-Regular.otf", 'U' };
 
 	std::vector<CurvesData> curvesData;
 	

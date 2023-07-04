@@ -13,12 +13,16 @@ class Contour
 public:
 	std::vector<Bezier> m_Curves; // TMP
 	std::vector<glm::vec4> m_Bisector; // TMP
+	glm::vec4 m_bbox{0.};
 
-	Contour(const std::vector<glm::vec2>& points, const std::vector<uint16_t>& flag);
+	Contour() { m_Curves.clear(); m_Bisector.clear(); }
 	~Contour() {}
 
-private:
-
-	void buildCurves(const std::vector<glm::vec2>& points, const std::vector<uint16_t>& flags);
+	void push_back(const Bezier& bezier);
+	void reverse();
+	void scale(const float c);
 	void buildBisector();
+	void computeBbox();
+
+private:
 };

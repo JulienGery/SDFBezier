@@ -5,7 +5,7 @@
 
 layout ( push_constant) uniform constants
 {
-    uint maxIndex;
+    uint maxIndex, CurvesCount;
 } pushConstants;
 
 layout (std140, binding = 0) readonly uniform UBO 
@@ -43,8 +43,9 @@ void main()
         const float inside = SDF[index].y;
         const float root = SDF[index].z;
 
-        // const uint color = CustomMix(0xff0000ff, 0xffff0000, float(curveIndex) / float(CurvesCount));
-
+        const uint color = CustomMix(0xff0000ff, 0xffff0000, float(curveIndex) / float(pushConstants.CurvesCount));
+        image[index] = color;
+        return;
         if(inside > 0)
         {
             if(curveIndex % 3 == 0)

@@ -15,12 +15,15 @@ project "SDFBezier"
 
       "../Walnut/Walnut/src",
 
+      "../include/",
+
       "%{IncludeDir.VulkanSDK}",
    }
 
    links
    {
-       "Walnut"
+       "Walnut",
+       "../linking/freetype.lib"
    }
 
    targetdir ("../bin/" .. outputdir .. "/%{prj.name}")
