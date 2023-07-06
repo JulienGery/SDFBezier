@@ -75,7 +75,7 @@ public:
     ~Renderer() { cleanup(); }
     
     //void recordComputeCommandBuffers(const size_t index);
-    void renderSDF(const size_t width, const size_t height, const uint32_t curvesCount);
+    void renderSDF(const size_t width, const size_t height, const uint32_t curvesCount /*const uint32_t curveIndex*/);
     void generateImage(const size_t curvesCount);
     //void render();
     std::vector<OUTPUTIMAGE> getImage();

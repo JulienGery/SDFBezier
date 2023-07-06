@@ -32,6 +32,11 @@ uint CustomMix(const in uint a, const in uint b, const in float c)
     return a + uint(delta * c);
 }
 
+uint insideColor(const in uint a)
+{
+    return 0xffffffff & (~a);
+}
+
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
 void main()
@@ -46,18 +51,18 @@ void main()
         const uint color = CustomMix(0xff0000ff, 0xffff0000, float(curveIndex) / float(pushConstants.CurvesCount));
         image[index] = color;
         return;
-        if(inside > 0)
-        {
-            if(curveIndex % 3 == 0)
-                image[index] = 0xffff0000;
-            else if(curveIndex % 3 == 1)
-                image[index] = 0xff0000ff;
-            else
-                image[index] = 0xff00ff00;
-        }
-        else 
-        {
-            image[index] = 0xffffffff;
-        }
+
+        // uint color;
+        // if(curveIndex % 3 == 0)
+        //     color = 0xff00ff00;
+        // else if(curveIndex % 3 == 1)
+        //     color = 0xffff0000;
+        // else
+        //     color = 0xff0000ff;
+
+        // if(inside < 0)
+        //     color = insideColor(color);
+
+        // image[index] = color | 0xff000000;
     }
 }

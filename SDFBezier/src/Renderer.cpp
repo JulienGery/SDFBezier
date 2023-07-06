@@ -37,6 +37,7 @@ struct UniformBufferObject
 struct PushConstantGenerateSDF
 {
     uint32_t CurvesCount, ScreenResolution, width, height;
+    //uint32_t curveIndex;
 };
 
 struct PushConstantGenrateImage
@@ -191,7 +192,7 @@ void Renderer::generateImage(const size_t curvesCount)
     submitCommandBuffer(m_ComputeCommandBuffers[1]);
 }
 
-void Renderer::renderSDF(const size_t width, const size_t height, const uint32_t curvesCount)
+void Renderer::renderSDF(const size_t width, const size_t height, const uint32_t curvesCount /*const uint32_t curveIndex*/)
 {
     m_Height = height;
     m_Width = width;
@@ -201,6 +202,7 @@ void Renderer::renderSDF(const size_t width, const size_t height, const uint32_t
     pushConstant.width = m_Width;
     pushConstant.ScreenResolution = m_Width * m_Height;
     pushConstant.CurvesCount = curvesCount;
+    //pushConstant.curveIndex = curveIndex;
 
     const size_t count = m_Width * m_Height / 64 + 1;
     

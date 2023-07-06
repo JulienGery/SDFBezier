@@ -119,9 +119,9 @@ void Glyph::readTTF()
     computeBbox();
 
     const float scaleFactor = 1./
-        std::min(m_bbox.z - m_bbox.x, m_bbox.w - m_bbox.y);
+        std::max(m_bbox.z - m_bbox.x, m_bbox.w - m_bbox.y);
 
-    scale(scaleFactor / 1.80);
+    scale(scaleFactor);
 
     std::cout << "scale factor: " << scaleFactor << '\n';
 

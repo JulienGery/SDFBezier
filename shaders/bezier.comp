@@ -3,7 +3,7 @@
 #define EPSILON 1e-05
 #define MAXITERATION 200
 #define PI 3.14159265358979323846264338327950288419716939937510
-#define DEFAULT_VEC3 vec3(3.402823466E+38, 1, 0)
+#define DEFAULT_VEC3 vec3(3.402823466E+38, 1, -1)
 
 struct CurvesData
 {
@@ -16,6 +16,7 @@ struct CurvesData
 layout ( push_constant ) uniform constants
 {
     uint CurvesCount, ScreenResolution, width, height;
+    // uint curveIndex; //TMP
 } PushConstants;
 
 layout (std140, binding = 0) readonly uniform UBO 
@@ -40,7 +41,7 @@ void main()
 {
     const uint index = gl_GlobalInvocationID.x;
 
-    // const uint IndexTest = 12;
+    // const uint IndexTest = 22;
 
     if(index < PushConstants.ScreenResolution)
     {
@@ -102,7 +103,7 @@ float crossZ(const vec2 d, const vec2 v)
 vec3 linear(const vec2 point, const CurvesData curve)
 {
     if(! (crossN(curve.bisector.xy, point - Bezier(0., curve)) <= 0. && crossN(curve.bisector.zw, point - Bezier(1., curve)) >= 0.))
-        return DEFAULT_VEC3;          
+        return DEFAULT_VEC3;
 
     const vec2 p = point - curve.P_0;
 
@@ -278,9 +279,9 @@ vec3 quadratic(const vec2 point, const CurvesData curve, const float currentDist
     if(sdBox(point - curve.centerAndTopRight.xy, curve.centerAndTopRight.zw) > currentDistance)
         return DEFAULT_VEC3;
 
-    if(!(crossN(curve.bisector.xy, point - quadraticBezier(0., curve)) <= 0. && crossN(curve.bisector.zw, point - quadraticBezier(1., curve)) >= 0.))
-        return DEFAULT_VEC3;
-
+    // don't help that mutch
+    // if(!(crossN(curve.bisector.xy, point - quadraticBezier(0., curve)) <= 0. && crossN(curve.bisector.zw, point - quadraticBezier(1., curve)) >= 0.))
+    //     return DEFAULT_VEC3;
 
     const vec2 p = point - curve.P_0;
     
@@ -473,20 +474,20 @@ vec2 cubicDBezier(const float t, const CurvesData curve)
                 + 3.0 * t * t * curve.p3;
 }
 
-
-
 vec3 cubic(const vec2 point, const CurvesData curve, const float currentDistance)
 {
-    // const vec2 DirectionStart = cubicDBezier(0, curve);
-    // const vec2 DirectionEnd = cubicDBezier(1, curve);
-    // const vec2 CurveStart = cubicBezier(0., curve);
-    // const vec2 CurveEnd = cubicBezier(1., curve);
-
-    // if(!(crossN(-curve.bisector.xy, point - CurveStart) <= 0 && crossN(curve.bisector.zw, point - CurveEnd) >= 0))
-    //     return DEFAULT_VEC3;
 
     if(sdBox(point - curve.centerAndTopRight.xy, curve.centerAndTopRight.zw) > currentDistance)
         return DEFAULT_VEC3;
+
+    
+    // {
+    //     const vec2 startToPoint = point - curve.P_0;
+    //     const vec2 endToPoint = point - cubicBezier(1., curve);
+    //     if(dot(startToPoint, curve.bisector.xy) < 0 && crossN(curve.bisector.xy, startToPoint) > 0.0 || 
+    //         dot(endToPoint, curve.bisector.zw) < 0 && crossN(curve.bisector.zw, endToPoint) < 0.)
+    //         return DEFAULT_VEC3;
+    // }
 
     const vec2 p = point - curve.P_0;
 
@@ -530,5 +531,52 @@ vec3 cubic(const vec2 point, const CurvesData curve, const float currentDistance
         }
     }
 
+    //it is possible to detect them before trying to find their roots but i coudld be wrong
+    if(result.z <= 0.)
+    {
+        const vec2 curveStart = curve.P_0;
+        const vec2 startToPoint = point - curveStart;
+        if((crossN(curve.bisector.xy, startToPoint) > 0.0))
+            return DEFAULT_VEC3;
+    } if (result.z >= 1.0)
+    {
+        const vec2 curveEnd = cubicBezier(1., curve);
+        const vec2 endToPoint = point - curveEnd;
+        if((crossN(curve.bisector.zw, endToPoint) < 0.))
+            return DEFAULT_VEC3;
+    }
+
     return result;
 }
+
+
+// void main()
+// {
+//     const uint testIndex = PushConstants.curveIndex;
+
+//     const uint index = gl_GlobalInvocationID.x;
+//     if (index < PushConstants.ScreenResolution)
+//     {
+//         const CurvesData curve = TMP[testIndex];
+
+//         const float x = index % PushConstants.width;
+//         const float y = (index - x) / float(PushConstants.width);
+//         const vec2 point = vec2((x + 0.5) / PushConstants.width, (y+0.5) / PushConstants.height);
+
+//         const vec2 startToPoint = point - curve.P_0;
+//         const vec2 endToPoint = point - cubicBezier(1., curve);
+        
+//          TODO figure that out
+
+//         if(dot(startToPoint, curve.bisector.xy) < 0 && crossN(curve.bisector.xy, startToPoint) < 0 ||
+//             dot(endToPoint, curve.bisector.zw) > 0 && crossN(curve.bisector.zw, endToPoint) < 0.)
+//             OUTPUT.result[index] = vec4(-1);
+//         else
+//             OUTPUT.result[index] = vec4(DEFAULT_VEC3, 0);
+
+//         // if(sdBox(point - curve.centerAndTopRight.xy, curve.centerAndTopRight.zw) < .0)
+//         //     OUTPUT.result[index] = vec4(-1);
+//         // else 
+//         //     OUTPUT.result[index] = vec4(DEFAULT_VEC3, 0);
+//     }
+// }

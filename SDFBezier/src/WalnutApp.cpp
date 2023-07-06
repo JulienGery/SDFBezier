@@ -51,8 +51,6 @@ public:
 		for (size_t i = 0; i < width * height; i++)
 			m_ImageData[i] = 0x00000000;
 
-
-
 		{
 			const Walnut::ScopedTimer timer{ "render time" };
 			const auto& curves = m_glyph.m_Curves;
@@ -80,6 +78,7 @@ public:
 				data.centerAndTopRight = { center, b - center };
 
 				curvesData[i] = data;
+
 			}
 
 			renderer.updateUBO(curvesData);
@@ -129,16 +128,6 @@ public:
 		}
 
 
-		for (size_t i = width; i < width * height; i++)
-			if (m_ImageData[i] == 0xff00ff00 &&
-				m_ImageData[i + 1] == 0 &&
-				m_ImageData[i - 1] == 0 &&
-				m_ImageData[i - width] == 0 &&
-				m_ImageData[i + width] == 0)
-				m_Index = i;
-
-		//m_ImageData[m_Index] = 0xffffffff;
-
 		for (size_t i = m_CurveIndex; i < m_CurveIndex + 1; i++)
 		{
 			const glm::vec4 point = m_glyph.m_Bisectors[i];
@@ -147,17 +136,8 @@ public:
 			const glm::vec2 firstBisector = { point.x, point.y };
 			const glm::vec2 secondBisector = { point.z, point.w };
 
-			
-			//if (curve.size() == 4)
-			//{
-				//drawSq(-glm::normalize(curve.startDerivate()) * 50.f + curve.getFirstPoint() * glm::vec2(width, height), width, height, m_ImageData, 21, 0xffffff00);
-				//drawSq(glm::normalize(curve.endDerivate()) * 50.f + curve.getLastPoint() * glm::vec2(width, height), width, height, m_ImageData, 21, 0xff00f0ff);
-			//}
-			//else
-			{
-				drawSq(firstBisector * 50.f + curve.getFirstPoint() * glm::vec2(width, height), width, height, m_ImageData, 21, 0xffffff00); //blue firt bisector
-				drawSq(secondBisector * 50.f + curve.getLastPoint() * glm::vec2(width, height), width, height, m_ImageData, 21, 0xff00f0ff);
-			}
+			drawSq(firstBisector * 50.f + curve.getFirstPoint() * glm::vec2(width, height), width, height, m_ImageData, 21, 0xffffff00); //blue firt bisector
+			drawSq(secondBisector * 50.f + curve.getLastPoint() * glm::vec2(width, height), width, height, m_ImageData, 21, 0xff00f0ff);
 
 			drawSq(curve.getFirstPoint() * glm::vec2(width, height), width, height, m_ImageData, 21, 0xffff0000);
 			drawSq(curve.getLastPoint() * glm::vec2(width, height), width, height, m_ImageData, 21, 0xff0000ff);
@@ -192,26 +172,6 @@ public:
 		ImGui::End();
 		ImGui::Begin("parameters");
 
-		/*const size_t pointCount = m_Curve.getSize();
-
-		ImGui::InputFloat("p0x", &m_Curve.m_Points[0].x, 0.01f, 1.f, "%.2f");
-		ImGui::InputFloat("p0y", &m_Curve.m_Points[0].y, 0.01f, 1.f, "%.2f");
-
-		ImGui::InputFloat("p1x", &m_Curve.m_Points[1].x, 0.01f, 1.f, "%.2f");
-		ImGui::InputFloat("p1y", &m_Curve.m_Points[1].y, 0.01f, 1.f, "%.2f");
-
-		if (pointCount >= 3)
-		{
-			ImGui::InputFloat("p2x", &m_Curve.m_Points[2].x, 0.01f, 1.f, "%.2f");
-			ImGui::InputFloat("p2y", &m_Curve.m_Points[2].y, 0.01f, 1.f, "%.2f");
-		}
-
-		if (pointCount == 4)
-		{
-			ImGui::InputFloat("p3x", &m_Curve.m_Points[3].x, 0.01f, 1.f, "%.2f");
-			ImGui::InputFloat("p3y", &m_Curve.m_Points[3].y, 0.01f, 1.f, "%.2f");
-		}*/
-
 		ImGui::InputInt("Curve Index", (int*)&m_CurveIndex, 1, 100);
 		//ImGui::InputInt("Index", (int*)&m_Index, 1, 1000);
 
@@ -239,9 +199,11 @@ private:
 	size_t m_Index = 0;
 	size_t m_Switch = 0;
 
-	// PB with 9 HyliaSerifBeta-Regular.otf (parsing)
+	// PB with 9 HyliaSerifBeta-Regular.otf (parsing (bisectors) && rendering)
+	// PB with J HyliaSerifBeta-Regular.otf (rendering tiny dot on a bisector)
+	// PB with 5 HyliaSerifBeta-Regular.otf (parsing (bisectors))
 
-	Glyph m_glyph{ "..\\polices\\HyliaSerifBeta-Regular.otf", 'U' };
+	Glyph m_glyph{ "..\\polices\\HyliaSerifBeta-Regular.otf", '8' };
 
 	std::vector<CurvesData> curvesData;
 	

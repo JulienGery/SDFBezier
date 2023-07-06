@@ -4,6 +4,8 @@
 #include <complex>
 #include "glm/common.hpp"
 
+#define DELTA 0.001 //used when P0 = P1 => p1 = O
+
 Bezier::Bezier(const std::vector<glm::vec2>& points)
 {
 	if (points.size() > 4)
@@ -65,7 +67,8 @@ void Bezier::computeBbox()
 			topRight.x = i.x;
 		if (i.y > topRight.y)
 			topRight.y = i.y;
-		if (i.x < topRight.x)
+
+		if (i.x < bottomLeft.x)
 			bottomLeft.x = i.x;
 		if (i.y < bottomLeft.y)
 			bottomLeft.y = i.y;
@@ -80,6 +83,8 @@ glm::vec2 Bezier::endDerivate() const
 
 	const glm::vec2 endVec = m_Points[end];
 	const glm::vec2 preEnd = m_Points[end - 1];
+	if (preEnd == endVec)
+		return (operator()(1.0) - operator()(1.0 - DELTA)) / (float)DELTA;
 
 	return 2.0f * (endVec - preEnd);
 }
@@ -88,6 +93,8 @@ glm::vec2 Bezier::startDerivate() const
 {
 	const glm::vec2 start = m_Points[0];
 	const glm::vec2 sec = m_Points[1];
+	if (start == sec)
+		return (operator()(DELTA) - start) / (float)DELTA;
 
 	return 2.0f * (sec - start);
 }
@@ -149,5 +156,6 @@ std::vector<glm::vec2> Bezier::extremum() const
 			result.push_back(operator()(glm::clamp(i.real(), 0.f, 1.f)));
 
 	result.push_back(operator()(1.0));
+
 	return result;
 }
