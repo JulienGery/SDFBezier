@@ -2,6 +2,10 @@
 
 #define PI 3.14159265358979323846264338327950288419716939937510
 
+#define RED 0xff0000ff
+#define GREEN 0xff00ff00
+#define BLUE 0xffff0000
+#define WHITE 0xffffffff
 
 layout ( push_constant) uniform constants
 {
@@ -47,10 +51,11 @@ void main()
         const uint curveIndex = uint(SDF[index].w);
         const float inside = SDF[index].y;
         const float root = SDF[index].z;
+        const float distanceToCurve = SDF[index].x;
 
-        const uint color = CustomMix(0xff0000ff, 0xffff0000, float(curveIndex) / float(pushConstants.CurvesCount));
-        image[index] = color;
-        return;
+        // const uint color = CustomMix(0xff0000ff, 0xffff0000, float(curveIndex) / float(pushConstants.CurvesCount));
+        // image[index] = color;
+        // return;
 
         // uint color;
         // if(curveIndex % 3 == 0)
@@ -64,5 +69,21 @@ void main()
         //     color = insideColor(color);
 
         // image[index] = color | 0xff000000;
+
+        const uint[28] colors = {RED, RED, RED, RED, GREEN, GREEN, GREEN, GREEN, 
+                            GREEN, GREEN, RED, RED, GREEN, BLUE, GREEN, RED, 
+                            GREEN, BLUE, GREEN, RED, GREEN, BLUE, GREEN, RED, 
+                            GREEN, GREEN, RED, RED};
+
+        
+        uint color = colors[curveIndex];
+        
+        if(inside < 0)
+            color = insideColor(color);
+
+        if(distanceToCurve > 0.03 && inside < 0)
+            color = WHITE;
+
+        image[index] = color | 0xff000000;
     }
 }

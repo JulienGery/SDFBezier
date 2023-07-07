@@ -112,20 +112,20 @@ public:
 
 		// 8259 264 172
 
-		for (const auto& outline : m_glyph.m_Contours)
-			for(const auto& curve : m_glyph.m_Curves)
-				for (float i = 0; i < 1.0; i += 0.001)
-				{
-					const glm::vec2 location = computeBezier(curve, i) * glm::vec2{width, height};
-					drawSq(location, width, height, m_ImageData, 5, 0xff0000ff);
-				}
+		//for (const auto& outline : m_glyph.m_Contours)
+		//	for(const auto& curve : m_glyph.m_Curves)
+		//		for (float i = 0; i < 1.0; i += 0.001)
+		//		{
+		//			const glm::vec2 location = computeBezier(curve, i) * glm::vec2{width, height};
+		//			drawSq(location, width, height, m_ImageData, 5, 0xff0000ff);
+		//		}
 
-		const auto& curve = m_glyph.m_Curves[m_CurveIndex];
-		for (float i = 0; i < 1.0; i += 0.001)
-		{
-			const glm::vec2 location = computeBezier(curve, i) * glm::vec2{width, height};
-			drawSq(location, width, height, m_ImageData, 5, 0xff00ffff);
-		}
+		//const auto& curve = m_glyph.m_Curves[m_CurveIndex];
+		//for (float i = 0; i < 1.0; i += 0.001)
+		//{
+		//	const glm::vec2 location = computeBezier(curve, i) * glm::vec2{width, height};
+		//	drawSq(location, width, height, m_ImageData, 5, 0xff00ffff);
+		//}
 
 
 		for (size_t i = m_CurveIndex; i < m_CurveIndex + 1; i++)

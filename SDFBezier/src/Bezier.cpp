@@ -94,7 +94,10 @@ glm::vec2 Bezier::startDerivate() const
 	const glm::vec2 start = m_Points[0];
 	const glm::vec2 sec = m_Points[1];
 	if (start == sec)
-		return (operator()(DELTA) - start) / (float)DELTA;
+	{
+		const glm::vec2 third = m_Points[2];
+		return third - start;	
+	}
 
 	return 2.0f * (sec - start);
 }

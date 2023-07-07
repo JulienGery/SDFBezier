@@ -479,15 +479,14 @@ vec3 cubic(const vec2 point, const CurvesData curve, const float currentDistance
 
     if(sdBox(point - curve.centerAndTopRight.xy, curve.centerAndTopRight.zw) > currentDistance)
         return DEFAULT_VEC3;
-
     
-    // {
-    //     const vec2 startToPoint = point - curve.P_0;
-    //     const vec2 endToPoint = point - cubicBezier(1., curve);
-    //     if(dot(startToPoint, curve.bisector.xy) < 0 && crossN(curve.bisector.xy, startToPoint) > 0.0 || 
-    //         dot(endToPoint, curve.bisector.zw) < 0 && crossN(curve.bisector.zw, endToPoint) < 0.)
-    //         return DEFAULT_VEC3;
-    // }
+    {
+        const vec2 startToPoint = point - curve.P_0;
+        const vec2 endToPoint = point - cubicBezier(1., curve);
+        if(dot(startToPoint, curve.bisector.xy) < 0 && crossN(curve.bisector.xy, startToPoint) > 0.0 || 
+            dot(endToPoint, curve.bisector.zw) < 0 && crossN(curve.bisector.zw, endToPoint) < 0.)
+            return DEFAULT_VEC3;
+    }
 
     const vec2 p = point - curve.P_0;
 
@@ -532,19 +531,19 @@ vec3 cubic(const vec2 point, const CurvesData curve, const float currentDistance
     }
 
     //it is possible to detect them before trying to find their roots but i coudld be wrong
-    if(result.z <= 0.)
-    {
-        const vec2 curveStart = curve.P_0;
-        const vec2 startToPoint = point - curveStart;
-        if((crossN(curve.bisector.xy, startToPoint) > 0.0))
-            return DEFAULT_VEC3;
-    } if (result.z >= 1.0)
-    {
-        const vec2 curveEnd = cubicBezier(1., curve);
-        const vec2 endToPoint = point - curveEnd;
-        if((crossN(curve.bisector.zw, endToPoint) < 0.))
-            return DEFAULT_VEC3;
-    }
+    // if(result.z <= 0.)
+    // {
+    //     const vec2 curveStart = curve.P_0;
+    //     const vec2 startToPoint = point - curveStart;
+    //     if((crossN(curve.bisector.xy, startToPoint) > 0.0))
+    //         return DEFAULT_VEC3;
+    // } if (result.z >= 1.0)
+    // {
+    //     const vec2 curveEnd = cubicBezier(1., curve);
+    //     const vec2 endToPoint = point - curveEnd;
+    //     if((crossN(curve.bisector.zw, endToPoint) < 0.))
+    //         return DEFAULT_VEC3;
+    // }
 
     return result;
 }
