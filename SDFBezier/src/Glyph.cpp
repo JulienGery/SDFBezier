@@ -67,7 +67,7 @@ int TMPCubicTO( const FT_Vector* control1,
     return 0;
 }
 
-// TODO read correctly ttf
+
 void Glyph::readTTF()
 {
     FT_Library library;
@@ -113,6 +113,7 @@ void Glyph::readTTF()
     {
         m_Contours[i].buildBisector();
         m_Contours[i].computeBbox();
+        m_Contours[i].assignColors();
     }
 
     //TODO rework that part
@@ -123,11 +124,10 @@ void Glyph::readTTF()
 
     scale(scaleFactor);
 
-    std::cout << "scale factor: " << scaleFactor << '\n';
-
     error = FT_Done_FreeType(library);
     if (error)
         std::cout << "error when closing freetype\n";
+
 }
 
 void Glyph::TMPGETBEZIER()

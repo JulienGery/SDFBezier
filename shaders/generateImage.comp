@@ -7,14 +7,21 @@
 #define BLUE 0xffff0000
 #define WHITE 0xffffffff
 
+struct CurveData
+{
+    vec4 derivatives;
+    vec4 startAndEndCurve;
+    vec4 previusCurveNextCurveColor;
+};
+
 layout ( push_constant) uniform constants
 {
-    uint maxIndex, CurvesCount;
+    uint maxIndex, CurvesCount, width, height;
 } pushConstants;
 
 layout (std140, binding = 0) readonly uniform UBO 
 {
-    vec4 angles[400];
+    CurveData curves[100];
 };
 
 layout (std140, binding = 1) readonly buffer Image
@@ -38,7 +45,12 @@ uint CustomMix(const in uint a, const in uint b, const in float c)
 
 uint insideColor(const in uint a)
 {
-    return 0xffffffff & (~a);
+    return ~a;
+}
+
+float zCross(const vec2 a, const vec2 b)
+{
+    return a.x * b.y - a.y * b.x;
 }
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
@@ -53,36 +65,62 @@ void main()
         const float root = SDF[index].z;
         const float distanceToCurve = SDF[index].x;
 
-        // const uint color = CustomMix(0xff0000ff, 0xffff0000, float(curveIndex) / float(pushConstants.CurvesCount));
-        // image[index] = color;
-        // return;
+        const bool isInside = inside < 0;
 
-        // uint color;
-        // if(curveIndex % 3 == 0)
-        //     color = 0xff00ff00;
-        // else if(curveIndex % 3 == 1)
-        //     color = 0xffff0000;
-        // else
-        //     color = 0xff0000ff;
-
-        // if(inside < 0)
-        //     color = insideColor(color);
-
-        // image[index] = color | 0xff000000;
-
-        const uint[28] colors = {RED, RED, RED, RED, GREEN, GREEN, GREEN, GREEN, 
-                            GREEN, GREEN, RED, RED, GREEN, BLUE, GREEN, RED, 
-                            GREEN, BLUE, GREEN, RED, GREEN, BLUE, GREEN, RED, 
-                            GREEN, GREEN, RED, RED};
-
+        uint color = uint(curves[curveIndex].previusCurveNextCurveColor.z);
         
-        uint color = colors[curveIndex];
-        
-        if(inside < 0)
+        if(isInside)
             color = insideColor(color);
 
-        if(distanceToCurve > 0.03 && inside < 0)
+        else 
+        {
+            image[index] = 0;
+            return;
+        }
+
+        if(distanceToCurve > 0.02 && isInside)
             color = WHITE;
+
+        {
+            const float x = index % pushConstants.width;
+            const float y = (index - x) / float(pushConstants.width);
+            const vec2 point = vec2((x + 0.5) / pushConstants.width, (y+0.5) / pushConstants.height);
+
+            //TODO clean that !!
+            if(root > 0.5)
+            {
+                const uint nextCurveIndex = uint(curves[curveIndex].previusCurveNextCurveColor.y);
+
+                const vec2 nextCurveStartDerivate = curves[nextCurveIndex].derivatives.xy;
+                const vec2 startToPoint = point - curves[nextCurveIndex].startAndEndCurve.xy;
+
+                if(zCross(nextCurveStartDerivate, startToPoint) < 0)
+                {
+                    if (isInside)
+                        color = WHITE;
+                    else
+                        color = 0;
+                }
+            }
+            else 
+            {
+                const uint previusCurveIndex = uint(curves[curveIndex].previusCurveNextCurveColor.x);
+
+                const vec2 previusCurveEndDerivate = curves[previusCurveIndex].derivatives.zw;
+                const vec2 endToPoint = point - curves[previusCurveIndex].startAndEndCurve.zw;
+
+                if(zCross(previusCurveEndDerivate, endToPoint) < 0)
+                {
+                    if (isInside)
+                        color = WHITE;
+                    else
+                        color = 0;
+                }
+            }
+            
+
+
+        }
 
         image[index] = color | 0xff000000;
     }

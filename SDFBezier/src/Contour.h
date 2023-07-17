@@ -23,6 +23,7 @@ public:
 	void scale(const float c);
 	void buildBisector();
 	void computeBbox();
+	void assignColors();
 
 private:
 };

@@ -1,5 +1,7 @@
 #include "Draw.h"
 
+#include "glm/common.hpp"
+
 void drawSq(const glm::vec2& location, const size_t& width, const size_t& height, uint32_t* array, const size_t& length, const size_t& color)
 {
 	size_t x = location.x;

@@ -29,8 +29,7 @@ struct Roots
 
 struct OUTPUTIMAGE
 {
-    uint32_t color;
-    uint32_t padding[3];
+    glm::vec4 color;
 };
 
 struct CurvesData
@@ -40,6 +39,15 @@ struct CurvesData
     glm::vec4 centerAndTopRight;
     glm::vec4 bisector;
     glm::vec2 P_0, p1, p2, p3;
+};
+
+struct GenerateImage 
+{
+    glm::vec4 derivatetives;
+    glm::vec4 startAndEndCurve;
+    glm::vec4 previusCurveNextCurveColor;
+    //color
+    //angle
 };
 
 
@@ -80,10 +88,9 @@ public:
     //void render();
     std::vector<OUTPUTIMAGE> getImage();
 
-
     void updateUBO(const std::vector<float>& angles);
     void updateUBO(const std::vector<CurvesData>& curvesData);
-
+    void updateUBO(const std::vector<GenerateImage>& vector);
 
     std::vector<glm::vec4> getResult();
     //void getCoeff(std::vector<glm::vec4[4]>& result);

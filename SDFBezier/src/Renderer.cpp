@@ -42,7 +42,7 @@ struct PushConstantGenerateSDF
 
 struct PushConstantGenrateImage
 {
-    int maxIndex, curvesCount;
+    uint32_t maxIndex, curvesCount, width, height;
 };
 
 void coutRoots(const Roots& roots)
@@ -186,6 +186,8 @@ void Renderer::generateImage(const size_t curvesCount)
     PushConstantGenrateImage pushConstant{};
     pushConstant.maxIndex = m_Height * m_Width;
     pushConstant.curvesCount = curvesCount;
+    pushConstant.width = m_Width;
+    pushConstant.height = m_Height;
 
     recordComputeCommandBuffer(m_ComputeCommandBuffers[1], m_Pipelines[1], m_PipelinesLayouts[1], count, pushConstant);
     
@@ -785,12 +787,16 @@ void Renderer::updateUBO(const std::vector<float>& angles)
     memcpy(m_UniformBufferMapped, &ubo, sizeof(ubo));
 }
 
-void Renderer::updateUBO(const std::vector<CurvesData>& curvesData)
+void Renderer::updateUBO(const std::vector<GenerateImage>& vector)
 {
-    memcpy(m_UniformBufferMapped, curvesData.data(), curvesData.size() *  sizeof(CurvesData));
+
+    memcpy(m_UniformBufferMapped, vector.data(), sizeof(GenerateImage) * vector.size());
 }
 
-
+void Renderer::updateUBO(const std::vector<CurvesData>& curvesData)
+{
+    memcpy(m_UniformBufferMapped, curvesData.data(), sizeof(CurvesData) * curvesData.size());
+}
 
 VKAPI_ATTR VkBool32 VKAPI_CALL Renderer::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {

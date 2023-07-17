@@ -8,6 +8,7 @@ class Bezier
 {
 public:
 	std::vector<glm::vec2> m_Points;
+	uint32_t m_Color = 0xff00ff00;
 	glm::vec4 m_bbox; //TMP should be private
 
 	Bezier(const std::vector<glm::vec2>& points);
