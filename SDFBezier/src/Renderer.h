@@ -43,11 +43,15 @@ struct CurvesData
 
 struct GenerateImage 
 {
-    glm::vec4 derivatetives;
-    glm::vec4 startAndEndCurve;
-    glm::vec4 previusCurveNextCurveColor;
+    //glm::vec4 derivatetives;
+    //glm::vec4 startAndEndCurve;
+    //glm::vec4 previusCurveNextCurveColor;
     //color
     //angle
+
+    glm::vec4 startAndEndPoint;
+    glm::vec4 previusCurveEndDerivateAndNextcurveStartDerivate;
+    glm::vec4 colorAndAngles;
 };
 
 

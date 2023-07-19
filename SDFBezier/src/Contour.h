@@ -13,6 +13,7 @@ class Contour
 public:
 	std::vector<Bezier> m_Curves; // TMP
 	std::vector<glm::vec4> m_Bisector; // TMP
+	std::vector<glm::vec2> m_Angles;
 	glm::vec4 m_bbox{0.};
 
 	Contour() { m_Curves.clear(); m_Bisector.clear(); }

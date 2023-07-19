@@ -5,13 +5,14 @@
 #define RED 0xff0000ff
 #define GREEN 0xff00ff00
 #define BLUE 0xffff0000
+#define ALPHA 0xff000000
 #define WHITE 0xffffffff
 
-struct CurveData
+struct newDataStructe
 {
-    vec4 derivatives;
-    vec4 startAndEndCurve;
-    vec4 previusCurveNextCurveColor;
+    vec4 startAndEndPoint;
+    vec4 previusCurveEndDerivateAndNextcurveStartDerivate;
+    vec4 colorAndAngles;
 };
 
 layout ( push_constant) uniform constants
@@ -21,7 +22,7 @@ layout ( push_constant) uniform constants
 
 layout (std140, binding = 0) readonly uniform UBO 
 {
-    CurveData curves[100];
+    newDataStructe curves[100];
 };
 
 layout (std140, binding = 1) readonly buffer Image
@@ -33,6 +34,7 @@ layout (std140, binding = 1) readonly buffer Image
 layout (std140, binding = 2) writeonly buffer OUTIMAGE
 {
     uint image[ ];
+    // vec4 putainDeMerde[ ];
 };
 
 uint CustomMix(const in uint a, const in uint b, const in float c)
@@ -53,6 +55,20 @@ float zCross(const vec2 a, const vec2 b)
     return a.x * b.y - a.y * b.x;
 }
 
+uint rgba_interp(uint src, uint dst, uint t) {
+    const uint s = 255 - t;
+    return (
+        (((((src >> 0)  & 0xff) * s +
+           ((dst >> 0)  & 0xff) * t) >> 8)) |
+        (((((src >> 8)  & 0xff) * s +
+           ((dst >> 8)  & 0xff) * t)     )  & ~0xff) |
+        (((((src >> 16) & 0xff) * s +
+           ((dst >> 16) & 0xff) * t) << 8)  & ~0xffff) |
+        (((((src >> 24) & 0xff) * s +
+           ((dst >> 24) & 0xff) * t) << 16) & ~0xffffff)
+    );
+}
+
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
 void main()
@@ -64,64 +80,65 @@ void main()
         const float inside = SDF[index].y;
         const float root = SDF[index].z;
         const float distanceToCurve = SDF[index].x;
-
         const bool isInside = inside < 0;
 
-        uint color = uint(curves[curveIndex].previusCurveNextCurveColor.z);
+        if(distanceToCurve > 0.02)
+        {
+            if(isInside)
+                image[index] = WHITE;
+            else 
+                image[index] = 0;
+            return;
+        }
         
+        uint color = uint(curves[curveIndex].colorAndAngles.x);
         if(isInside)
             color = insideColor(color);
 
-        else 
+        const float x = index % pushConstants.width;
+        const float y = (index - x) / float(pushConstants.width);
+        const vec2 point = vec2((x + 0.5) / pushConstants.width, (y+0.5) / pushConstants.height);
+        
+        vec2 derivate;
+        vec2 pointToCurve;
+        bool isConcave;
+        
+        if(root < 0.5)
         {
-            image[index] = 0;
-            return;
+            derivate = curves[curveIndex].previusCurveEndDerivateAndNextcurveStartDerivate.xy;
+            pointToCurve = point - curves[curveIndex].startAndEndPoint.xy;
+            isConcave = bool(curves[curveIndex].colorAndAngles.y);
+        }
+        else
+        {
+            derivate = curves[curveIndex].previusCurveEndDerivateAndNextcurveStartDerivate.zw;
+            pointToCurve = point - curves[curveIndex].startAndEndPoint.zw;
+            isConcave = bool(curves[curveIndex].colorAndAngles.z);
         }
 
-        if(distanceToCurve > 0.02 && isInside)
+        //TODO rework here
+        if(isConcave && isInside)
+        {
+            //derivate first then point to curve !! 
+            const float dis = zCross(derivate, pointToCurve);
+            if(dis < 0)
+                color = WHITE;
+        }
+        else if(!isInside && !isConcave)
+        {
+            const float dis = zCross(derivate, pointToCurve);
+            if(dis > 0)
+                color = 0;
+        }
+        else if (isInside)
             color = WHITE;
-
-        {
-            const float x = index % pushConstants.width;
-            const float y = (index - x) / float(pushConstants.width);
-            const vec2 point = vec2((x + 0.5) / pushConstants.width, (y+0.5) / pushConstants.height);
-
-            //TODO clean that !!
-            if(root > 0.5)
-            {
-                const uint nextCurveIndex = uint(curves[curveIndex].previusCurveNextCurveColor.y);
-
-                const vec2 nextCurveStartDerivate = curves[nextCurveIndex].derivatives.xy;
-                const vec2 startToPoint = point - curves[nextCurveIndex].startAndEndCurve.xy;
-
-                if(zCross(nextCurveStartDerivate, startToPoint) < 0)
-                {
-                    if (isInside)
-                        color = WHITE;
-                    else
-                        color = 0;
-                }
-            }
-            else 
-            {
-                const uint previusCurveIndex = uint(curves[curveIndex].previusCurveNextCurveColor.x);
-
-                const vec2 previusCurveEndDerivate = curves[previusCurveIndex].derivatives.zw;
-                const vec2 endToPoint = point - curves[previusCurveIndex].startAndEndCurve.zw;
-
-                if(zCross(previusCurveEndDerivate, endToPoint) < 0)
-                {
-                    if (isInside)
-                        color = WHITE;
-                    else
-                        color = 0;
-                }
-            }
-            
+        else 
+            color = 0;
 
 
-        }
-
-        image[index] = color | 0xff000000;
+        if(color != 0)
+            image[index] = color | ALPHA;
+        else 
+            image[index] = 0;
     }
 }

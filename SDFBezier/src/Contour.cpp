@@ -62,13 +62,21 @@ glm::vec2 bisector(const glm::vec2 a, const glm::vec2 b)
 	return matrix * x;
 }
 
+float cross(const glm::vec2 u, const glm::vec2 v)
+{
+	return u.x * v.y - u.y * v.x;
+}
+
 void Contour::buildBisector()
 {
 	m_Bisector.resize(m_Curves.size());
+	m_Angles.resize(m_Curves.size());
 
 	glm::vec2 startBisector = bisector(
 		-m_Curves[m_Curves.size() - 1].endDerivate(), m_Curves[0].startDerivate()
 	);
+
+	bool startAngleConcave = cross(-m_Curves[m_Curves.size() - 1].endDerivate(), m_Curves[0].startDerivate()) < 0 ? true : false;
 
 	for (size_t i = 0; i < m_Curves.size(); i++)
 	{
@@ -76,8 +84,13 @@ void Contour::buildBisector()
 			-m_Curves[i].endDerivate(), m_Curves[(i + 1) % m_Curves.size()].startDerivate()
 		);
 
+		const bool EndAngleConcave = cross(-m_Curves[i].endDerivate(), m_Curves[(i + 1) % m_Curves.size()].startDerivate()) < 0 ? true : false;
+
 		m_Bisector[i] = {startBisector, endBisector};
+		m_Angles[i] = {startAngleConcave, EndAngleConcave};
+
 		startBisector = endBisector;
+		startAngleConcave = EndAngleConcave;
 	}
 
 }

@@ -28,96 +28,96 @@ uint32_t ToDelete(const float f)
 	return ret;
 }
 
-//float getColor(const uint32_t color, const uint32_t mask)
-//{
-//	return color & mask;
-//}
-//
-//uint32_t getColor(const float color[3])
-//{
-//	uint32_t ret = 0;
-//
-//	if (color[0])
-//		ret += RED;
-//	if (color[1])
-//		ret += GREEN;
-//	if (color[2])
-//		ret += BLUE;
-//	
-//	return ret;
-//}
-//
-//msdfgen::Bitmap<float, 3> convertMSDF(const std::vector<OUTPUTIMAGE>& MSDF, const size_t width, const size_t height)
-//{
-//	msdfgen::Bitmap ret = msdfgen::Bitmap<float, 3>(width, height);
-//
-//	for (size_t j = 0; j < height; j++)
-//		for (size_t i = 0; i < width; i++)
-//		{
-//			const size_t index = j * width + i;
-//
-//			const uint32_t color = ToDelete(MSDF[index].color.x);
-//
-//			ret(i, j)[0] = getColor(color, RED);
-//			ret(i, j)[1] = getColor(color, GREEN);
-//			ret(i, j)[2] = getColor(color, BLUE);
-//		}
-//
-//	return ret;
-//}
-//
-//std::vector<uint32_t> convertMSDF(const msdfgen::Bitmap<float, 3>& MSDF)
-//{
-//	const size_t width = MSDF.width();
-//	const size_t height = MSDF.height();
-//
-//	std::vector<uint32_t> ret(width * height);
-//
-//	for (size_t j = 0; j < height; j++)
-//		for (size_t i = 0; i < width; i++)
-//		{
-//			const size_t index = j * width + i;
-//			ret[index] = getColor(MSDF(i, j));
-//		}
-//
-//	return ret;
-//}
-//
-//std::vector<uint32_t> convertMSDF(const msdfgen::Bitmap<float, 1>& MSDF)
-//{
-//	const size_t width = MSDF.width();
-//	const size_t height = MSDF.height();
-//
-//	std::vector<uint32_t> ret(width * height);
-//
-//	for (size_t j = 0; j < height; j++)
-//		for (size_t i = 0; i < width; i++)
-//		{
-//			const size_t index = j * width + i;
-//			if (MSDF(i, j)[0])
-//				ret[index] = ALPHA | RED | GREEN | BLUE;
-//			else
-//				ret[index] = 0x0;
-//		}
-//
-//	return ret;
-//}
-//
-//
-//std::vector<uint32_t> tmpRenderSdf(const std::vector<OUTPUTIMAGE>& MSDF, const size_t msdfWidth, const size_t msdfHeight, const size_t targetWidth, const size_t targetHeight, const glm::vec2 scale)
-//{
-//	const double avgScale = 1;
-//	const double range = 1;
-//
-//	msdfgen::Bitmap<float, 1> render(targetWidth, targetHeight);
-//	const msdfgen::Bitmap<float, 3> msdf = convertMSDF(MSDF, msdfWidth, msdfHeight);
-//	msdfgen::renderSDF(render, msdf, avgScale * range, .5f);
-//
-//
-//	std::vector<uint32_t> ret = convertMSDF(render);
-//
-//	return ret;
-//}
+float getColor(const uint32_t color, const uint32_t mask)
+{
+	return color & mask;
+}
+
+uint32_t getColor(const float color[3])
+{
+	uint32_t ret = 0;
+
+	if (color[0])
+		ret += RED;
+	if (color[1])
+		ret += GREEN;
+	if (color[2])
+		ret += BLUE;
+	
+	return ret;
+}
+
+msdfgen::Bitmap<float, 3> convertMSDF(const std::vector<OUTPUTIMAGE>& MSDF, const size_t width, const size_t height)
+{
+	msdfgen::Bitmap ret = msdfgen::Bitmap<float, 3>(width, height);
+
+	for (size_t j = 0; j < height; j++)
+		for (size_t i = 0; i < width; i++)
+		{
+			const size_t index = j * width + i;
+
+			const uint32_t color = ToDelete(MSDF[index].color.x);
+
+			ret(i, j)[0] = getColor(color, RED);
+			ret(i, j)[1] = getColor(color, GREEN);
+			ret(i, j)[2] = getColor(color, BLUE);
+		}
+
+	return ret;
+}
+
+std::vector<uint32_t> convertMSDF(const msdfgen::Bitmap<float, 3>& MSDF)
+{
+	const size_t width = MSDF.width();
+	const size_t height = MSDF.height();
+
+	std::vector<uint32_t> ret(width * height);
+
+	for (size_t j = 0; j < height; j++)
+		for (size_t i = 0; i < width; i++)
+		{
+			const size_t index = j * width + i;
+			ret[index] = getColor(MSDF(i, j));
+		}
+
+	return ret;
+}
+
+std::vector<uint32_t> convertMSDF(const msdfgen::Bitmap<float, 1>& MSDF)
+{
+	const size_t width = MSDF.width();
+	const size_t height = MSDF.height();
+
+	std::vector<uint32_t> ret(width * height);
+
+	for (size_t j = 0; j < height; j++)
+		for (size_t i = 0; i < width; i++)
+		{
+			const size_t index = j * width + i;
+			if (MSDF(i, j)[0])
+				ret[index] = ALPHA | RED | GREEN | BLUE;
+			else
+				ret[index] = 0x0;
+		}
+
+	return ret;
+}
+
+
+std::vector<uint32_t> tmpRenderSdf(const std::vector<OUTPUTIMAGE>& MSDF, const size_t msdfWidth, const size_t msdfHeight, const size_t targetWidth, const size_t targetHeight, const glm::vec2 scale)
+{
+	const double avgScale = 1;
+	const double range = .5;
+
+	msdfgen::Bitmap<float, 1> render(targetWidth, targetHeight);
+	const msdfgen::Bitmap<float, 3> msdf = convertMSDF(MSDF, msdfWidth, msdfHeight);
+	msdfgen::renderSDF(render, msdf, avgScale * range, .5f);
+
+
+	std::vector<uint32_t> ret = convertMSDF(render);
+
+	return ret;
+}
 
 
 
@@ -177,8 +177,8 @@ public:
 			}
 
 			renderer.updateUBO(curvesData);
-			//renderer.renderSDF(m_MSDFWidth, m_MSDFHeight, curvesData.size());
-			renderer.renderSDF(width, height, curvesData.size());
+			renderer.renderSDF(m_MSDFWidth, m_MSDFHeight, curvesData.size());
+			//renderer.renderSDF(width, height, curvesData.size());
 		}
 
 
@@ -195,25 +195,25 @@ public:
 			std::vector<GenerateImage> vec(0);
 			for (const auto& outline : m_glyph.m_Contours)
 			{
-				const size_t start = vec.size();
-
-				for (size_t i = 0; i < outline.m_Curves.size(); i++) 
+				const auto& curves = outline.m_Curves;
+				for (int i = 0; i < outline.m_Curves.size(); i++) 
 				{
 					const auto& curve = outline.m_Curves[i];
 
 					const glm::vec2 startCurve = curve(0.);
 					const glm::vec2 endCurve = curve(1.0);
 
-					const glm::vec2 startDerivative = curve.startDerivate();
-					const glm::vec2 endDerivate = curve.endDerivate();
-					
-					GenerateImage generateImage{};
-					generateImage.derivatetives = { startDerivative, endDerivate };
-					generateImage.startAndEndCurve = { startCurve, endCurve };
-					generateImage.previusCurveNextCurveColor.x = start + ((i - 1) % outline.m_Curves.size());
-					generateImage.previusCurveNextCurveColor.y = start + ((i + 1) % outline.m_Curves.size());
-					generateImage.previusCurveNextCurveColor.z = curve.m_Color;
+					const size_t nextCurveIndex = (i + 1) % curves.size();
+					const size_t previusCurveIndex = i == 0 ? curves.size() - 1 : i - 1;
 
+					const glm::vec2 previusCurveEndDerivate = curves[previusCurveIndex].endDerivate();
+					const glm::vec2 nextCurveStartDerivate = curves[nextCurveIndex].startDerivate();
+
+					GenerateImage generateImage{};
+					generateImage.startAndEndPoint = { startCurve, endCurve };
+					generateImage.previusCurveEndDerivateAndNextcurveStartDerivate = { glm::normalize(previusCurveEndDerivate), glm::normalize(nextCurveStartDerivate) };
+					generateImage.colorAndAngles = { curve.m_Color, outline.m_Angles[i], 0};
+					
 					vec.push_back(generateImage);
 				}
 			}
@@ -224,32 +224,30 @@ public:
 
 			if (m_Switch == 1)
 			{
-				for (size_t i = 0; i < width * height; i++)
+				for (size_t i = 0; i < image.size(); i++)
 					m_ImageData[i] = ToDelete(image[i].color.x);
 			}
 
+			else
+			{
+				const std::vector<uint32_t> tmpSDF = tmpRenderSdf(image, m_MSDFWidth, m_MSDFHeight, width, height, { 1.0, 1.0 });
 
-			//else
-			//{
-			//	const std::vector<uint32_t> tmpSDF = tmpRenderSdf(image, m_MSDFWidth, m_MSDFHeight, width, height, { 1.0, 1.0 });
-
-			//	for (size_t i = 0; i < width * height; i++)
-			//		m_ImageData[i] = tmpSDF[i] | 0xff000000;
-			//}
+				for (size_t i = 0; i < width * height; i++)
+					m_ImageData[i] = tmpSDF[i] | 0xff000000;
+			}
 		}
 
 
-		//const auto& curve = m_glyph.m_Curves[m_CurveIndex];
-		//for (float i = 0; i < 1.0; i += 0.001)
-		//{
-		//	const glm::vec2 location = curve(i) * glm::vec2{width, height};
-		//	drawSq(location, width, height, m_ImageData, 5, 0xff00ffff);
-		//}
+		/*const auto& curve = m_glyph.m_Curves[m_CurveIndex];
+		for (float i = 0; i < 1.0; i += 0.001)
+		{
+			const glm::vec2 location = curve(i) * glm::vec2{width, height};
+			drawSq(location, width, height, m_ImageData, 5, 0xffdb9c74);
+		}*/
 
 
 		for (size_t i = m_CurveIndex; i < m_CurveIndex + 1; i++)
 		{
-			break;
 			const glm::vec4 point = m_glyph.m_Bisectors[i];
 			const auto& curve = m_glyph.m_Curves[i];
 
