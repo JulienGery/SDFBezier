@@ -1,0 +1,44 @@
+[
+{
+  "directory": "/home/leroymerlin/Documents/futuresdf/build",
+  "command": "/usr/bin/c++  -I/home/leroymerlin/Documents/futuresdf/build -I/home/leroymerlin/Documents/futuresdf/Mylib -I/home/leroymerlin/Documents/futuresdf/include -I/home/leroymerlin/Documents/futuresdf/TMP -O2 -std=gnu++17 -o CMakeFiles/SDFBezier.dir/main.cpp.o -c /home/leroymerlin/Documents/futuresdf/main.cpp",
+  "file": "/home/leroymerlin/Documents/futuresdf/main.cpp",
+  "output": "CMakeFiles/SDFBezier.dir/main.cpp.o"
+},
+{
+  "directory": "/home/leroymerlin/Documents/futuresdf/build/Mylib",
+  "command": "/usr/bin/c++  -I/home/leroymerlin/Documents/futuresdf/Mylib/Renderer -I/home/leroymerlin/Documents/futuresdf/Mylib/PUBLIC -I/home/leroymerlin/Documents/futuresdf/Mylib/include -I/home/leroymerlin/Documents/futuresdf/Mylib/Glyph -O2 -std=gnu++17 -o CMakeFiles/Renderer.dir/Renderer.cpp.o -c /home/leroymerlin/Documents/futuresdf/Mylib/Renderer.cpp",
+  "file": "/home/leroymerlin/Documents/futuresdf/Mylib/Renderer.cpp",
+  "output": "Mylib/CMakeFiles/Renderer.dir/Renderer.cpp.o"
+},
+{
+  "directory": "/home/leroymerlin/Documents/futuresdf/build/Mylib",
+  "command": "/usr/bin/c++  -I/home/leroymerlin/Documents/futuresdf/Mylib/Renderer -I/home/leroymerlin/Documents/futuresdf/Mylib/PUBLIC -I/home/leroymerlin/Documents/futuresdf/Mylib/include -I/home/leroymerlin/Documents/futuresdf/Mylib/Glyph -O2 -std=gnu++17 -o CMakeFiles/Glyph.dir/Glyph.cpp.o -c /home/leroymerlin/Documents/futuresdf/Mylib/Glyph.cpp",
+  "file": "/home/leroymerlin/Documents/futuresdf/Mylib/Glyph.cpp",
+  "output": "Mylib/CMakeFiles/Glyph.dir/Glyph.cpp.o"
+},
+{
+  "directory": "/home/leroymerlin/Documents/futuresdf/build/Mylib",
+  "command": "/usr/bin/c++  -I/home/leroymerlin/Documents/futuresdf/Mylib/Renderer -I/home/leroymerlin/Documents/futuresdf/Mylib/PUBLIC -I/home/leroymerlin/Documents/futuresdf/Mylib/include -I/home/leroymerlin/Documents/futuresdf/Mylib/Glyph -O2 -std=gnu++17 -o CMakeFiles/Glyph.dir/Bezier.cpp.o -c /home/leroymerlin/Documents/futuresdf/Mylib/Bezier.cpp",
+  "file": "/home/leroymerlin/Documents/futuresdf/Mylib/Bezier.cpp",
+  "output": "Mylib/CMakeFiles/Glyph.dir/Bezier.cpp.o"
+},
+{
+  "directory": "/home/leroymerlin/Documents/futuresdf/build/Mylib",
+  "command": "/usr/bin/c++  -I/home/leroymerlin/Documents/futuresdf/Mylib/Renderer -I/home/leroymerlin/Documents/futuresdf/Mylib/PUBLIC -I/home/leroymerlin/Documents/futuresdf/Mylib/include -I/home/leroymerlin/Documents/futuresdf/Mylib/Glyph -O2 -std=gnu++17 -o CMakeFiles/Glyph.dir/Contour.cpp.o -c /home/leroymerlin/Documents/futuresdf/Mylib/Contour.cpp",
+  "file": "/home/leroymerlin/Documents/futuresdf/Mylib/Contour.cpp",
+  "output": "Mylib/CMakeFiles/Glyph.dir/Contour.cpp.o"
+},
+{
+  "directory": "/home/leroymerlin/Documents/futuresdf/build/TMP",
+  "command": "/usr/bin/c++   -O2 -std=gnu++17 -o CMakeFiles/msdfgen.dir/Vector2.cpp.o -c /home/leroymerlin/Documents/futuresdf/TMP/Vector2.cpp",
+  "file": "/home/leroymerlin/Documents/futuresdf/TMP/Vector2.cpp",
+  "output": "TMP/CMakeFiles/msdfgen.dir/Vector2.cpp.o"
+},
+{
+  "directory": "/home/leroymerlin/Documents/futuresdf/build/TMP",
+  "command": "/usr/bin/c++   -O2 -std=gnu++17 -o CMakeFiles/msdfgen.dir/render-sdf.cpp.o -c /home/leroymerlin/Documents/futuresdf/TMP/render-sdf.cpp",
+  "file": "/home/leroymerlin/Documents/futuresdf/TMP/render-sdf.cpp",
+  "output": "TMP/CMakeFiles/msdfgen.dir/render-sdf.cpp.o"
+}
+]

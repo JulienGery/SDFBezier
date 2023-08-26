@@ -20,7 +20,7 @@ layout ( push_constant) uniform constants
     uint maxIndex, CurvesCount, width, height;
 } pushConstants;
 
-layout (std140, binding = 0) readonly uniform UBO 
+layout (std140, binding = 0) readonly uniform UBO
 {
     newDataStructe curves[100];
 };
@@ -69,10 +69,29 @@ uint rgba_interp(uint src, uint dst, uint t) {
     );
 }
 
+float findInterpolationValue(float distanceToCurve, const bool isInside, const float distanceOfRectangle)
+{
+    if(isInside)
+        distanceToCurve = -distanceToCurve;
+
+    distanceToCurve = clamp(distanceToCurve, -distanceOfRectangle, distanceOfRectangle);
+
+    const float a = 1.0/(2.0 * distanceOfRectangle);
+    const float b = .5;
+
+    return a * distanceToCurve + b;
+}
+
+
+bool isSmooth(const uint curveIndex, const float root)
+{
+    return true;
+}
+
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
 void main()
-{ 
+{
     uint index = gl_GlobalInvocationID.x;
     if(index < pushConstants.maxIndex)
     {
@@ -81,28 +100,40 @@ void main()
         const float root = SDF[index].z;
         const float distanceToCurve = SDF[index].x;
         const bool isInside = inside < 0;
+        // const float distanceOfRectangle = sqrt(1.0/(pushConstants.width * pushConstants.width) + 1.0/(pushConstants.height * pushConstants.height)) / 2.0;
+        const float distanceOfRectangle = 0.0244086 / 32.5;
 
-        if(distanceToCurve > 0.02)
-        {
-            if(isInside)
-                image[index] = WHITE;
-            else 
-                image[index] = 0;
-            return;
-        }
-        
+        // if (distanceToCurve > distanceOfRectangle)
+        // {
+        //     if (isInside)
+        //         image[index] = WHITE;
+        //     else
+        //         image[index] = 0;
+        // }
+        // else
+        //     image[index] = rgba_interp(WHITE, 0, uint(255 * findInterpolationValue(distanceToCurve, isInside, distanceOfRectangle)));
+        //
+        //
+        // if(distanceToCurve > distanceOfRectangle * 2.0)
+        // {
+        //     if(isInside)
+        //         image[index] = WHITE;
+        //     else
+        //         image[index] = 0;
+        //     return;
+        // }
+
+
         uint color = uint(curves[curveIndex].colorAndAngles.x);
-        if(isInside)
-            color = insideColor(color);
 
         const float x = index % pushConstants.width;
         const float y = (index - x) / float(pushConstants.width);
         const vec2 point = vec2((x + 0.5) / pushConstants.width, (y+0.5) / pushConstants.height);
-        
+
         vec2 derivate;
         vec2 pointToCurve;
         bool isConcave;
-        
+
         if(root < 0.5)
         {
             derivate = curves[curveIndex].previusCurveEndDerivateAndNextcurveStartDerivate.xy;
@@ -117,28 +148,28 @@ void main()
         }
 
         //TODO rework here
-        if(isConcave && isInside)
+        if(isConcave)
         {
-            //derivate first then point to curve !! 
+            color = insideColor(color);
+            //derivate first then point to curve !!
             const float dis = zCross(derivate, pointToCurve);
-            if(dis < 0)
-                color = WHITE;
+            if (isInside && dis < distanceToCurve)
+                color = rgba_interp(WHITE, color, uint(findInterpolationValue(abs(dis), dis < 0, distanceOfRectangle) * 255));
+            else
+                color = rgba_interp(color, 0, uint(findInterpolationValue(distanceToCurve, isInside, distanceOfRectangle) * 255));
         }
-        else if(!isInside && !isConcave)
+        else
         {
             const float dis = zCross(derivate, pointToCurve);
-            if(dis > 0)
-                color = 0;
+            if(!isInside && dis < distanceToCurve)
+                color = rgba_interp(0, color, uint(findInterpolationValue(abs(dis), dis > 0, distanceOfRectangle) * 255));
+            else
+                 color = rgba_interp(WHITE, color, uint(findInterpolationValue(distanceToCurve, isInside, distanceOfRectangle) * 255));
         }
-        else if (isInside)
-            color = WHITE;
-        else 
-            color = 0;
-
 
         if(color != 0)
             image[index] = color | ALPHA;
-        else 
+        else
             image[index] = 0;
     }
 }

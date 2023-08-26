@@ -1,0 +1,2 @@
+/usr/bin/ar qc libGlyph.a CMakeFiles/Glyph.dir/Glyph.cpp.o CMakeFiles/Glyph.dir/Bezier.cpp.o CMakeFiles/Glyph.dir/Contour.cpp.o
+/usr/bin/ranlib libGlyph.a

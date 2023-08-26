@@ -1,0 +1,1 @@
+/usr/bin/c++ -O2 CMakeFiles/SDFBezier.dir/main.cpp.o -o SDFBezier  Mylib/libRenderer.a Mylib/libGlyph.a TMP/libmsdfgen.a -lvulkan -lfreetype 

@@ -19,7 +19,7 @@ layout ( push_constant ) uniform constants
     // uint curveIndex; //TMP
 } PushConstants;
 
-layout (std140, binding = 0) readonly uniform UBO 
+layout (std140, binding = 0) readonly uniform UBO
 {
     CurvesData TMP[100];
 };
@@ -95,7 +95,7 @@ float crossN(const vec2 d, const vec2 v)
 
 float crossZ(const vec2 d, const vec2 v)
 {
-    const vec2 a = normalize(d); 
+    const vec2 a = normalize(d);
     const vec2 b = normalize(v);
     return (a.x * b.y - a.y * b.x);
 }
@@ -187,7 +187,7 @@ vec2[3] startingPoints(const in float[4] coefficients)
 
     bool radiusZero = false;
     float radius;
-    
+
     if(a_0 == 0.0)
     {
         radius = pow(abs(coefficients[1] / a_3), 0.5);
@@ -195,9 +195,9 @@ vec2[3] startingPoints(const in float[4] coefficients)
         offset = PI / (2.0 * 2.0);
         radiusZero = true;
     }
-    else 
+    else
         radius = pow(abs(a_0 /a_3), 1./3.);
-    
+
     vec2[3] roots;
 
     for(uint i = 0; i < 3; i++)
@@ -205,7 +205,7 @@ vec2[3] startingPoints(const in float[4] coefficients)
 
     if(radiusZero)
         roots[0] = vec2(0);
-    
+
     return roots;
 }
 
@@ -275,7 +275,7 @@ vec2[3] Aberth(const in float[4] coefficients)
 
 vec3 quadratic(const vec2 point, const CurvesData curve, const float currentDistance)
 {
-    
+
     if(sdBox(point - curve.centerAndTopRight.xy, curve.centerAndTopRight.zw) > currentDistance)
         return DEFAULT_VEC3;
 
@@ -284,7 +284,7 @@ vec3 quadratic(const vec2 point, const CurvesData curve, const float currentDist
     //     return DEFAULT_VEC3;
 
     const vec2 p = point - curve.P_0;
-    
+
     float[4] coefficients;
     {
 
@@ -317,7 +317,7 @@ vec3 quadratic(const vec2 point, const CurvesData curve, const float currentDist
 
     vec2[3] roots;
     vec2 w3 = vec2(R, 0) + complexSQRT(R * R + Q * Q * Q);
-    
+
     {
         const float norm = length(w3);
         const float r = pow(norm, 1.0/3.0);
@@ -380,7 +380,7 @@ vec2[5] startingPoints(const in float[6] coefficients)
 
     bool radiusZero = false;
     float radius;
-    
+
     if(a_0 == 0)
     {
         radius = pow(abs(coefficients[1] / a_5), 0.25);
@@ -388,9 +388,9 @@ vec2[5] startingPoints(const in float[6] coefficients)
         offset = PI / (2.0 * 4.0);
         radiusZero = true;
     }
-    else 
+    else
         radius = pow(abs(a_0 / a_5), 1./5.);
-    
+
     vec2[5] roots;
 
     for(uint i = 0; i < 5; i++)
@@ -398,7 +398,7 @@ vec2[5] startingPoints(const in float[6] coefficients)
 
     if(radiusZero)
         roots[0] = vec2(0);
-    
+
     return roots;
 }
 
@@ -444,6 +444,7 @@ vec2[5] Aberth(const float[6] coefficients)
     for(uint i = 0; i < MAXITERATION; i++)
     {
         const vec2[5] CurrentApproximation = roots;
+
         uint finish = 0;
         for(uint k = 0; k < 5; k++)
         {
@@ -470,43 +471,33 @@ vec2[5] Aberth(const float[6] coefficients)
 vec2 cubicDBezier(const float t, const CurvesData curve)
 {
         return  3.0 * curve.p1
-                + 6.0 * t * curve.p2 
+                + 6.0 * t * curve.p2
                 + 3.0 * t * t * curve.p3;
 }
 
 vec3 cubic(const vec2 point, const CurvesData curve, const float currentDistance)
 {
-
     if(sdBox(point - curve.centerAndTopRight.xy, curve.centerAndTopRight.zw) > currentDistance)
         return DEFAULT_VEC3;
-    
+
     {
         const vec2 startToPoint = point - curve.P_0;
         const vec2 endToPoint = point - cubicBezier(1., curve);
-        if(dot(startToPoint, curve.bisector.xy) < 0 && crossN(curve.bisector.xy, startToPoint) > 0.0 || 
+        if(dot(startToPoint, curve.bisector.xy) < 0 && crossN(curve.bisector.xy, startToPoint) > 0.0 ||
             dot(endToPoint, curve.bisector.zw) < 0 && crossN(curve.bisector.zw, endToPoint) < 0.)
             return DEFAULT_VEC3;
     }
 
     const vec2 p = point - curve.P_0;
 
-    float[6] coefficients;
-    {
-        const float a = dot(curve.p3, curve.p3);
-        const float b = 5.f * dot(curve.p2, curve.p3);
-        const float c = 4.f * dot(curve.p1, curve.p3) + 6.0 * dot(curve.p2, curve.p2);
-
-        const float d = 9.f * dot(curve.p1, curve.p2) - dot(curve.p3, p); // t^2
-        const float e = 3.f * dot(curve.p1, curve.p1) - 2.0 * dot(curve.p2, p); // t
-        const float f = -dot(curve.p1, p);
-
-        coefficients[0] = f;
-        coefficients[1] = e;
-        coefficients[2] = d;
-        coefficients[3] = c;
-        coefficients[4] = b;
-        coefficients[5] = a;
-    }
+    const float[6] coefficients = {
+        -dot(curve.p1, p),
+        3.f * dot(curve.p1, curve.p1) - 2.0 * dot(curve.p2, p),
+        9.f * dot(curve.p1, curve.p2) - dot(curve.p3, p),
+        4.f * dot(curve.p1, curve.p3) + 6.0 * dot(curve.p2, curve.p2),
+        5.f * dot(curve.p2, curve.p3),
+        dot(curve.p3, curve.p3)
+    };
 
     const vec2[5] roots = Aberth(coefficients);
 
@@ -530,52 +521,7 @@ vec3 cubic(const vec2 point, const CurvesData curve, const float currentDistance
         }
     }
 
-    //it is possible to detect them before trying to find their roots but i coudld be wrong
-    // if(result.z <= 0.)
-    // {
-    //     const vec2 curveStart = curve.P_0;
-    //     const vec2 startToPoint = point - curveStart;
-    //     if((crossN(curve.bisector.xy, startToPoint) > 0.0))
-    //         return DEFAULT_VEC3;
-    // } if (result.z >= 1.0)
-    // {
-    //     const vec2 curveEnd = cubicBezier(1., curve);
-    //     const vec2 endToPoint = point - curveEnd;
-    //     if((crossN(curve.bisector.zw, endToPoint) < 0.))
-    //         return DEFAULT_VEC3;
-    // }
-
     return result;
 }
 
 
-// void main()
-// {
-//     const uint testIndex = PushConstants.curveIndex;
-
-//     const uint index = gl_GlobalInvocationID.x;
-//     if (index < PushConstants.ScreenResolution)
-//     {
-//         const CurvesData curve = TMP[testIndex];
-
-//         const float x = index % PushConstants.width;
-//         const float y = (index - x) / float(PushConstants.width);
-//         const vec2 point = vec2((x + 0.5) / PushConstants.width, (y+0.5) / PushConstants.height);
-
-//         const vec2 startToPoint = point - curve.P_0;
-//         const vec2 endToPoint = point - cubicBezier(1., curve);
-        
-//          TODO figure that out
-
-//         if(dot(startToPoint, curve.bisector.xy) < 0 && crossN(curve.bisector.xy, startToPoint) < 0 ||
-//             dot(endToPoint, curve.bisector.zw) > 0 && crossN(curve.bisector.zw, endToPoint) < 0.)
-//             OUTPUT.result[index] = vec4(-1);
-//         else
-//             OUTPUT.result[index] = vec4(DEFAULT_VEC3, 0);
-
-//         // if(sdBox(point - curve.centerAndTopRight.xy, curve.centerAndTopRight.zw) < .0)
-//         //     OUTPUT.result[index] = vec4(-1);
-//         // else 
-//         //     OUTPUT.result[index] = vec4(DEFAULT_VEC3, 0);
-//     }
-// }
