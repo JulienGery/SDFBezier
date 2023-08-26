@@ -1,2 +1,0 @@
-/usr/bin/ar qc libmsdfgen.a CMakeFiles/msdfgen.dir/Vector2.cpp.o "CMakeFiles/msdfgen.dir/render-sdf.cpp.o"
-/usr/bin/ranlib libmsdfgen.a
